@@ -190,6 +190,10 @@ public sealed class FolderCustomizer
                 AppliedUtc = DateTimeOffset.UtcNow,
             });
 
+            // Avant de notifier, et non apres : l'Explorateur doit trouver une date fraiche
+            // quand il vient relire le dossier.
+            FolderAttributes.TouchFolder(full);
+
             NativeMethods.NotifyFolderChanged(full);
             _log.Info($"Colorise : « {full} » en {colorId}/{resolvedEmblemId}.");
             return OperationResult.Ok;
@@ -319,6 +323,8 @@ public sealed class FolderCustomizer
             }
 
             _journal.Remove(full);
+
+            FolderAttributes.TouchFolder(full);
             NativeMethods.NotifyFolderChanged(full);
             _log.Info($"Reinitialise : « {full} ».");
             return OperationResult.Ok;
