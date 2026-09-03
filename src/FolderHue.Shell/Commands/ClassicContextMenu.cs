@@ -19,6 +19,19 @@ namespace FolderHue.Shell.Commands;
 /// Les deux chemins partagent le catalogue, le personnalisateur et la liste d'exclusion : seule
 /// la construction du menu differe.
 /// </para>
+/// <para>
+/// Ce menu ne porte <b>aucune</b> puce, et ne peut pas en porter. Un element de menu classique se
+/// decore avec un <c>HBITMAP</c>, or ce handler s'execute dans un <c>dllhost.exe</c> surrogate
+/// impose par le manifeste (CLAUDE.md §4.7) : les <c>HMENU</c> se partagent entre processus, les
+/// objets GDI <b>non</b>. Un bitmap cree ici referencerait un handle invalide dans l'Explorateur.
+/// Verifie a l'ecran : ni les couleurs, ni les emblemes, ni l'entree racine n'affichaient d'image.
+/// Le code qui les posait a donc ete retire — il ne produisait rien et coutait, au premier clic
+/// droit, dix-neuf lectures de fichiers dans un processus qui n'etait pas encore chaud.
+/// </para>
+/// <para>
+/// La commande moderne, elle, garde ses puces : elle ne transmet qu'une chaine
+/// <c>chemin,index</c> que l'Explorateur resout lui-meme, sans objet GDI a traverser.
+/// </para>
 /// </remarks>
 [GeneratedComClass]
 internal sealed partial class ClassicContextMenu : IShellExtInit, IContextMenu
@@ -73,52 +86,33 @@ internal sealed partial class ClassicContextMenu : IShellExtInit, IContextMenu
 
             uint id = idCmdFirst;
 
-            // Position de l'element suivant dans le sous-menu : les puces se posent par position,
-            // et les separateurs en occupent une comme les autres.
-            uint position = 0;
-
             foreach (FolderColor color in PaletteCatalog.Colors)
             {
                 NativeMethods.AppendMenu(root, NativeMethods.MfString, id++, Loc.Get(color.ResourceKey));
-                NativeMethods.SetMenuItemBitmap(
-                    root, position++, MenuIcons.Get(ShellServices.Paths.LogoPath(color.Id)));
             }
 
             NativeMethods.AppendMenu(root, NativeMethods.MfSeparator, 0, null);
-            position++;
 
             IntPtr emblems = NativeMethods.CreatePopupMenu();
             if (emblems != IntPtr.Zero)
             {
-                uint emblemPosition = 0;
-
                 foreach (Emblem emblem in PaletteCatalog.Emblems)
                 {
                     NativeMethods.AppendMenu(emblems, NativeMethods.MfString, id++, Loc.Get(emblem.ResourceKey));
-                    NativeMethods.SetMenuItemBitmap(
-                        emblems,
-                        emblemPosition++,
-                        MenuIcons.Get(ShellServices.Paths.EmblemChipPath(emblem.Id)));
                 }
 
                 NativeMethods.AppendMenu(
                     root, NativeMethods.MfPopup, (UIntPtr)(ulong)emblems, Loc.Get("Menu_Emblem"));
-                NativeMethods.SetMenuItemBitmap(
-                    root, position++, MenuIcons.Get(ShellServices.Paths.EmblemChipPath(Emblem.NoneId)));
             }
             else
             {
+                // Le sous-menu n'a pas pu etre cree : les identifiants qu'il aurait consommes
+                // restent reserves, pour que « Reinitialiser » garde le meme decalage qu'ailleurs.
                 id += (uint)PaletteCatalog.Emblems.Count;
             }
 
             NativeMethods.AppendMenu(root, NativeMethods.MfSeparator, 0, null);
-            position++;
-
             NativeMethods.AppendMenu(root, NativeMethods.MfString, id++, Loc.Get("Menu_Reset"));
-            NativeMethods.SetMenuItemBitmap(
-                root,
-                position,
-                MenuIcons.Get(ShellServices.Paths.IconPath(PaletteCatalog.Neutral.Id, Emblem.NoneId)));
 
             NativeMethods.InsertMenu(
                 hmenu,
@@ -126,9 +120,6 @@ internal sealed partial class ClassicContextMenu : IShellExtInit, IContextMenu
                 NativeMethods.MfByPosition | NativeMethods.MfPopup,
                 (UIntPtr)(ulong)root,
                 Loc.Get("Menu_Root"));
-
-            NativeMethods.SetMenuItemBitmap(
-                hmenu, indexMenu, MenuIcons.Get(ShellServices.Paths.BrandLogoPath));
 
             // La partie basse du HRESULT porte le nombre d'identifiants consommes.
             return CommandCount;
