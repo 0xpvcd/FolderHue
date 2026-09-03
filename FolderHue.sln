@@ -1,0 +1,50 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{AD24622B-A3B2-4578-B375-613836130185}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FolderHue.Core", "src\FolderHue.Core\FolderHue.Core.csproj", "{9142C7D9-6C71-4B15-99BB-74AF3E9CD797}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FolderHue.Shell", "src\FolderHue.Shell\FolderHue.Shell.csproj", "{694EED17-1702-4A8B-9362-5C03B472BC3D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FolderHue.App", "src\FolderHue.App\FolderHue.App.csproj", "{6D2C50D1-FAC6-4877-B34A-8581318E2238}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1C41049C-392E-4DCF-A701-AAAA0CE2ACEE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FolderHue.Core.Tests", "tests\FolderHue.Core.Tests\FolderHue.Core.Tests.csproj", "{2892B8ED-7C0A-4F43-ADA8-D3E39CCB1833}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9142C7D9-6C71-4B15-99BB-74AF3E9CD797}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9142C7D9-6C71-4B15-99BB-74AF3E9CD797}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9142C7D9-6C71-4B15-99BB-74AF3E9CD797}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9142C7D9-6C71-4B15-99BB-74AF3E9CD797}.Release|Any CPU.Build.0 = Release|Any CPU
+		{694EED17-1702-4A8B-9362-5C03B472BC3D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{694EED17-1702-4A8B-9362-5C03B472BC3D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{694EED17-1702-4A8B-9362-5C03B472BC3D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{694EED17-1702-4A8B-9362-5C03B472BC3D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6D2C50D1-FAC6-4877-B34A-8581318E2238}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6D2C50D1-FAC6-4877-B34A-8581318E2238}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6D2C50D1-FAC6-4877-B34A-8581318E2238}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6D2C50D1-FAC6-4877-B34A-8581318E2238}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2892B8ED-7C0A-4F43-ADA8-D3E39CCB1833}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2892B8ED-7C0A-4F43-ADA8-D3E39CCB1833}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2892B8ED-7C0A-4F43-ADA8-D3E39CCB1833}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2892B8ED-7C0A-4F43-ADA8-D3E39CCB1833}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{9142C7D9-6C71-4B15-99BB-74AF3E9CD797} = {AD24622B-A3B2-4578-B375-613836130185}
+		{694EED17-1702-4A8B-9362-5C03B472BC3D} = {AD24622B-A3B2-4578-B375-613836130185}
+		{6D2C50D1-FAC6-4877-B34A-8581318E2238} = {AD24622B-A3B2-4578-B375-613836130185}
+		{2892B8ED-7C0A-4F43-ADA8-D3E39CCB1833} = {1C41049C-392E-4DCF-A701-AAAA0CE2ACEE}
+	EndGlobalSection
+EndGlobal

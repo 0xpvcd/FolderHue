@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!--
+    Langue neutre du projet : fr-FR (voir NeutralLanguage dans Directory.Build.props).
+    Toute chaine affichee a l'utilisateur passe par ici, y compris les titres du menu
+    contextuel : aucun litteral en dur dans l'UI ni dans GetTitle() (CLAUDE.md §7).
+  -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <data name="App_Name" xml:space="preserve">
+    <value>FolderHue</value>
+  </data>
+
+  <!-- Menu contextuel -->
+  <data name="Menu_Root" xml:space="preserve">
+    <value>FolderHue</value>
+  </data>
+  <data name="Menu_Emblem" xml:space="preserve">
+    <value>Emblème</value>
+  </data>
+  <data name="Menu_Reset" xml:space="preserve">
+    <value>Réinitialiser la couleur</value>
+  </data>
+
+  <!-- Palette -->
+  <data name="Color_Neutral" xml:space="preserve">
+    <value>Couleur d’origine</value>
+  </data>
+  <data name="Color_Red" xml:space="preserve">
+    <value>Rouge</value>
+  </data>
+  <data name="Color_Orange" xml:space="preserve">
+    <value>Orange</value>
+  </data>
+  <data name="Color_Amber" xml:space="preserve">
+    <value>Ambre</value>
+  </data>
+  <data name="Color_Yellow" xml:space="preserve">
+    <value>Jaune</value>
+  </data>
+  <data name="Color_Green" xml:space="preserve">
+    <value>Vert</value>
+  </data>
+  <data name="Color_Emerald" xml:space="preserve">
+    <value>Émeraude</value>
+  </data>
+  <data name="Color_Cyan" xml:space="preserve">
+    <value>Cyan</value>
+  </data>
+  <data name="Color_Blue" xml:space="preserve">
+    <value>Bleu</value>
+  </data>
+  <data name="Color_Indigo" xml:space="preserve">
+    <value>Indigo</value>
+  </data>
+  <data name="Color_Violet" xml:space="preserve">
+    <value>Violet</value>
+  </data>
+  <data name="Color_Pink" xml:space="preserve">
+    <value>Rose</value>
+  </data>
+  <data name="Color_Graphite" xml:space="preserve">
+    <value>Graphite</value>
+  </data>
+
+  <!-- Emblèmes -->
+  <data name="Emblem_None" xml:space="preserve">
+    <value>Aucun emblème</value>
+  </data>
+  <data name="Emblem_Important" xml:space="preserve">
+    <value>Important</value>
+  </data>
+  <data name="Emblem_Progress" xml:space="preserve">
+    <value>En cours</value>
+  </data>
+  <data name="Emblem_Done" xml:space="preserve">
+    <value>Terminé</value>
+  </data>
+  <data name="Emblem_Locked" xml:space="preserve">
+    <value>Verrouillé</value>
+  </data>
+  <data name="Emblem_Favorite" xml:space="preserve">
+    <value>Favori</value>
+  </data>
+
+  <!-- Refus de la liste d'exclusion -->
+  <data name="Protection_InvalidPath" xml:space="preserve">
+    <value>Ce chemin n'est pas valide.</value>
+  </data>
+  <data name="Protection_NotFound" xml:space="preserve">
+    <value>Ce dossier est introuvable.</value>
+  </data>
+  <data name="Protection_VolumeRoot" xml:space="preserve">
+    <value>La racine d'un disque ou d'un partage réseau ne peut pas être colorisée.</value>
+  </data>
+  <data name="Protection_SystemTree" xml:space="preserve">
+    <value>Ce dossier appartient au système et ne peut pas être modifié.</value>
+  </data>
+  <data name="Protection_KnownFolder" xml:space="preserve">
+    <value>Ce dossier est un dossier Windows de référence (Documents, Images, Bureau…) et ne peut pas être colorisé.</value>
+  </data>
+  <data name="Protection_ReparsePoint" xml:space="preserve">
+    <value>Ce dossier est un lien ou une jonction : le coloriser modifierait sa cible.</value>
+  </data>
+  <data name="Protection_ApplicationData" xml:space="preserve">
+    <value>Ce dossier appartient à FolderHue.</value>
+  </data>
+
+  <!-- Erreurs -->
+  <data name="Error_IconMissing" xml:space="preserve">
+    <value>L'icône demandée n'a pas encore été générée. Ouvrez FolderHue pour régénérer la palette.</value>
+  </data>
+  <data name="Error_UnknownColor" xml:space="preserve">
+    <value>Cette couleur est inconnue.</value>
+  </data>
+  <data name="Error_UnknownEmblem" xml:space="preserve">
+    <value>Cet emblème est inconnu.</value>
+  </data>
+  <data name="Error_AccessDenied" xml:space="preserve">
+    <value>Les droits nécessaires pour modifier ce dossier sont manquants.</value>
+  </data>
+  <data name="Error_Io" xml:space="preserve">
+    <value>Le dossier n'a pas pu être modifié.</value>
+  </data>
+
+  <!-- Interface de réglages -->
+  <data name="App_Title" xml:space="preserve">
+    <value>FolderHue — Réglages</value>
+  </data>
+  <data name="App_PaletteTab" xml:space="preserve">
+    <value>Palette</value>
+  </data>
+  <data name="App_FoldersTab" xml:space="preserve">
+    <value>Dossiers colorisés</value>
+  </data>
+  <data name="App_AboutTab" xml:space="preserve">
+    <value>À propos</value>
+  </data>
+  <data name="App_RegenerateIcons" xml:space="preserve">
+    <value>Régénérer les icônes</value>
+  </data>
+  <data name="App_OpenIconsFolder" xml:space="preserve">
+    <value>Ouvrir le dossier des icônes</value>
+  </data>
+  <data name="App_ResetSelected" xml:space="preserve">
+    <value>Réinitialiser le dossier sélectionné</value>
+  </data>
+  <data name="App_ResetAll" xml:space="preserve">
+    <value>Tout réinitialiser</value>
+  </data>
+  <data name="App_ResetAllConfirm" xml:space="preserve">
+    <value>Réinitialiser tous les dossiers colorisés ? Aucun fichier ne sera supprimé : seules les icônes personnalisées seront retirées.</value>
+  </data>
+  <data name="App_ColumnFolder" xml:space="preserve">
+    <value>Dossier</value>
+  </data>
+  <data name="App_ColumnColor" xml:space="preserve">
+    <value>Couleur</value>
+  </data>
+  <data name="App_ColumnEmblem" xml:space="preserve">
+    <value>Emblème</value>
+  </data>
+  <data name="App_ColumnDate" xml:space="preserve">
+    <value>Appliqué le</value>
+  </data>
+  <data name="App_GeneratingIcons" xml:space="preserve">
+    <value>Génération des icônes…</value>
+  </data>
+  <data name="App_IconsReady" xml:space="preserve">
+    <value>{0} icônes prêtes.</value>
+  </data>
+  <data name="App_SkippedFolders" xml:space="preserve">
+    <value>{0} dossier(s) n'ont pas pu être colorisés : ce sont des dossiers système, des liens ou des racines de disque, que FolderHue ne modifie jamais.</value>
+  </data>
+  <data name="App_PortabilityWarning" xml:space="preserve">
+    <value>L'icône est enregistrée dans votre profil et référencée par son chemin absolu. Si le dossier est déplacé sur une autre machine, un partage réseau ou une clé USB, il retrouvera son icône d'origine.</value>
+  </data>
+  <data name="App_VersionControlNote" xml:space="preserve">
+    <value>La colorisation ajoute un fichier desktop.ini masqué dans le dossier. C'est normal : Git ou OneDrive peuvent le signaler. Ajoutez « desktop.ini » à votre .gitignore si nécessaire.</value>
+  </data>
+</root>

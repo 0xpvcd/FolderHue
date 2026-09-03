@@ -1,0 +1,25 @@
+<Project>
+
+  <!--
+    Reglages communs a toute la solution (CLAUDE.md §7).
+    Les projets restent en net8.0 : c'est une decision arretee au §2.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <LangVersion>12.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <PlatformTarget>x64</PlatformTarget>
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
+    <NeutralLanguage>fr-FR</NeutralLanguage>
+  </PropertyGroup>
+
+  <!-- TreatWarningsAsErrors uniquement sur Core et Shell (CLAUDE.md §7). -->
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'FolderHue.Core' Or '$(MSBuildProjectName)' == 'FolderHue.Shell'">
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+
+  <assemblyIdentity name="FolderHue.Shell" version="1.0.0.0" type="win32" />
+
+  <!--
+    Fragment d'identite MSIX. Les trois valeurs doivent correspondre AU CARACTERE PRES a
+    FolderHue.Package/AppxManifest.xml :
+      packageName   <- Identity/@Name
+      publisher     <- Identity/@Publisher
+      applicationId <- Applications/Application/@Id
+    En cas d'ecart, ou si ce bloc est absent, l'Explorateur ignore l'extension en silence.
+    scripts/build.ps1 verifie cette correspondance a chaque build.
+  -->
+  <msix xmlns="urn:schemas-microsoft-com:msix.v1"
+        publisher="CN=FolderHueDev"
+        packageName="FolderHueDev.FolderHue"
+        applicationId="App" />
+
+</assembly>

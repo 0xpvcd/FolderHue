@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Interface de reglages et moteur de rendu des icones.
+    C'est ici, et nulle part ailleurs, que vit la dependance GDI+ : System.Drawing.Common
+    n'entre jamais dans le graphe NativeAOT de FolderHue.Shell (CLAUDE.md §2.1, §4.3).
+    Aucun paquet NuGet : WinForms et System.Drawing arrivent avec Microsoft.WindowsDesktop.App.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyName>FolderHue.App</AssemblyName>
+    <RootNamespace>FolderHue.App</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <SatelliteResourceLanguages>fr;en</SatelliteResourceLanguages>
+    <!-- Impose par WFAC010 : le DPI se configure ici et non dans app.manifest. -->
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FolderHue.Core\FolderHue.Core.csproj" />
+  </ItemGroup>
+
+</Project>

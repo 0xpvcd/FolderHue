@@ -1,0 +1,19 @@
+# Build
+[Bb]in/
+[Oo]bj/
+artifacts/
+*.user
+*.suo
+.vs/
+
+# NativeAOT / publish
+publish/
+*.pdb
+*.ilk
+
+# Sortie desktop.ini generee par les tests ou par l'app elle-meme
+desktop.ini
+desktop.ini.folderhue.bak
+
+# Certificats de dev — ne jamais versionner une cle privee
+*.pfx

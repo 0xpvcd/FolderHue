@@ -1,0 +1,71 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    DLL COM in-process chargee dans explorer.exe.
+
+    NativeAOT n'est pas une optimisation, c'est une exigence (CLAUDE.md §2.1) : une extension
+    shell manageee chargerait le CLR dans l'Explorateur, avec les conflits de version et les
+    plantages que Microsoft deconseille formellement. Le serveur COM est expose par
+    ComWrappers (StrategyBasedComWrappers + generateurs COM de .NET 8), jamais par
+    [ComVisible] ni RegAsm, non supportes en AOT.
+  -->
+  <PropertyGroup>
+    <PublishAot>true</PublishAot>
+    <NativeLib>Shared</NativeLib>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <AssemblyName>FolderHue.Shell</AssemblyName>
+    <RootNamespace>FolderHue.Shell</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <EnableComHosting>false</EnableComHosting>
+    <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
+
+    <!--
+      Les assemblys satellites ne survivent pas a la compilation NativeAOT : le menu utilise
+      les ressources neutres (fr-FR) embarquees dans l'image. L'application de reglages, elle,
+      reste entierement localisee.
+    -->
+    <SatelliteResourceLanguages>fr</SatelliteResourceLanguages>
+
+    <!--
+      ILCompiler recopie par defaut les ressources Win32 de l'assembly gere dans l'objet natif.
+      Le lieur refuse alors d'y ajouter le manifeste embarque (LNK1241). Comme le manifeste
+      d'identite MSIX est indispensable et que le bloc de version d'une DLL in-process n'est que
+      cosmetique — c'est le paquet MSIX qui porte la version qui compte — on desactive le premier
+      au profit du second.
+    -->
+    <IlcGenerateWin32Resources>false</IlcGenerateWin32Resources>
+
+    <!-- Une extension shell doit demarrer instantanement et ne jamais faire tomber Explorer. -->
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <UseSystemResourceKeys>false</UseSystemResourceKeys>
+    <StackTraceSupport>false</StackTraceSupport>
+    <OptimizationPreference>Size</OptimizationPreference>
+  </PropertyGroup>
+
+  <!--
+    Manifeste d'identite MSIX embarque dans la DLL.
+    S'il manque, l'Explorateur ne charge tout simplement pas l'extension, sans le moindre
+    message d'erreur : c'est le piege numero deux de ce projet (CLAUDE.md §4.5).
+  -->
+  <Target Name="EmbedMsixIdentityManifest" BeforeTargets="LinkNative">
+    <ItemGroup>
+      <!--
+        Microsoft.NETCore.Native.Windows.targets ajoute « /NOLOGO /MANIFEST:NO » a la ligne de
+        commande du lieur. Comme le dernier commutateur l'emporte, un simple ajout de
+        /MANIFEST:EMBED serait ignore (LNK4075). On retire donc l'argument d'origine et on
+        replace /NOLOGO nous-memes.
+      -->
+      <LinkerArg Remove="/NOLOGO /MANIFEST:NO" />
+      <LinkerArg Include="/NOLOGO" />
+      <LinkerArg Include="/MANIFEST:EMBED" />
+      <LinkerArg Include="/MANIFESTINPUT:$(MSBuildProjectDirectory)\FolderHue.Shell.manifest" />
+      <LinkerArg Include="/MANIFESTUAC:NO" />
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FolderHue.Core\FolderHue.Core.csproj" />
+  </ItemGroup>
+
+</Project>

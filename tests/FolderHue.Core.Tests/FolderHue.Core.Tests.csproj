@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Tests unitaires de FolderHue.Core (CLAUDE.md §8).
+    Le projet Shell n'est jamais teste ici : il exige l'Explorateur et se valide a la main
+    via la checklist du §9.
+  -->
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+  </PropertyGroup>
+
+  <!--
+    Dependances justifiees (CLAUDE.md §11) : xUnit est la pile de test imposee par le §3 et §8.
+    Elle est strictement limitee au projet de test, n'entre ni dans Core ni dans Shell, et
+    n'a donc aucune incidence sur la compilation NativeAOT. Licence Apache-2.0 / MIT.
+  -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\FolderHue.Core\FolderHue.Core.csproj" />
+  </ItemGroup>
+
+</Project>

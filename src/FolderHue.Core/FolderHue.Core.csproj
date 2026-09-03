@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Logique metier. Zero dependance shell, zero dependance graphique.
+    Ce projet est reference par FolderHue.Shell, qui est compile en NativeAOT :
+    tout ce qui entre ici entre dans le graphe AOT (CLAUDE.md §2.1).
+    IsAotCompatible active les analyseurs de trim/AOT pour attraper les ecarts a la compilation.
+  -->
+  <PropertyGroup>
+    <IsAotCompatible>true</IsAotCompatible>
+    <!-- Requis par le generateur de LibraryImport, qui emet du code non securise. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+</Project>
