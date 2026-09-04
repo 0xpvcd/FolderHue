@@ -10,9 +10,20 @@ namespace FolderHue.Shell.Commands;
 /// Commande racine « FolderHue ».
 /// </summary>
 /// <remarks>
-/// C'est la seule classe exposee par le CLSID du serveur COM. Le sous-menu compte
-/// 12 couleurs + « Couleur d'origine » + « Embleme » + « Reinitialiser », soit 15 elements — les
-/// separateurs ne comptent pas dans la limite de 16 par handler (CLAUDE.md §4.4).
+/// C'est la seule classe exposee par le CLSID du serveur COM.
+/// <para>
+/// ⚠️ <b>Le sous-menu doit tenir en 16 elements, separateurs COMPRIS.</b> Ce commentaire a
+/// longtemps affirme l'inverse — « les separateurs ne comptent pas » — et c'etait faux. Passe a
+/// 17 elements en ajoutant « Couleur d'origine », l'Explorateur n'a pas tronque le sous-menu :
+/// il a fait disparaitre <b>l'entree racine entiere</b>, logo compris, sans le moindre message.
+/// Le serveur COM continuait de s'activer normalement (<c>tools/probe-shell.ps1</c>), ce qui rend
+/// la panne indiscernable d'un probleme d'enregistrement.
+/// </para>
+/// <para>
+/// Decompte actuel, exactement 16 : 12 couleurs + « Couleur d'origine » + un separateur +
+/// « Embleme » + « Reinitialiser ». Il n'y a <b>plus de marge</b> : toute entree supplementaire
+/// impose d'en retirer une autre ou d'imbriquer davantage (CLAUDE.md §4.4).
+/// </para>
 /// </remarks>
 [GeneratedComClass]
 internal sealed partial class RootCommand : ExplorerCommandBase
@@ -43,9 +54,11 @@ internal sealed partial class RootCommand : ExplorerCommandBase
         // embleme, Apply retombe de lui-meme sur une reinitialisation.
         commands.Add(new ColorCommand(PaletteCatalog.Neutral));
 
+        // Un seul separateur, et non deux : il isole le bloc des couleurs des deux actions qui
+        // suivent. Le second, jadis place avant « Reinitialiser », a ete supprime pour tenir dans
+        // les 16 elements — voir l'avertissement en tete de classe.
         commands.Add(new SeparatorCommand());
         commands.Add(new EmblemMenuCommand());
-        commands.Add(new SeparatorCommand());
         commands.Add(new ResetCommand());
 
         return commands;
