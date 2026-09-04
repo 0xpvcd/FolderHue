@@ -89,6 +89,14 @@ public sealed class FolderCustomizer
             ProtectionResult protection = _protection.Evaluate(folderPath);
             if (protection.IsProtected)
             {
+                // Le dossier a disparu : le refus arrive avant que le chemin neutre n'atteigne
+                // Reset, qui est le seul endroit ou une trace perimee etait retiree. Sans cette
+                // purge l'entree survit indefiniment a son dossier.
+                if (string.Equals(protection.ReasonKey, ProtectedPaths.ReasonNotFound, StringComparison.Ordinal))
+                {
+                    _journal.PruneMissing();
+                }
+
                 return OperationResult.Failed(protection.ReasonKey!, folderPath);
             }
 

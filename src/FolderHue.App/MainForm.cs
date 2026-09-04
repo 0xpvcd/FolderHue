@@ -270,6 +270,10 @@ internal sealed class MainForm : Form
 
     private void RefreshFolders()
     {
+        // Un dossier supprime hors de l'application y laisse sa trace : rien ne nous en informe.
+        // La liste est le seul endroit ou l'utilisateur la verrait, donc celui ou on la retire.
+        _customizer.Journal.PruneMissing();
+
         _foldersView.BeginUpdate();
         _foldersView.Items.Clear();
 

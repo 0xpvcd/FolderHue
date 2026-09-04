@@ -459,4 +459,29 @@ public sealed class FolderCustomizerTests
         Assert.Equal(before, File.GetAttributes(folder));
         Assert.Empty(Directory.GetFileSystemEntries(folder));
     }
+    [Fact]
+    public void Apply_PurgeLaTraceDUnDossierDisparu()
+    {
+        // Regression : le refus « dossier introuvable » tombait avant que le chemin neutre
+        // n'atteigne Reset, seul endroit ou la trace etait retiree. L'entree survivait donc
+        // indefiniment a son dossier, et un dossier recreant le meme chemin heritait de sa
+        // sauvegarde (CLAUDE.md §6.1).
+        using var workspace = new TempWorkspace();
+        workspace.CreateFakeIcon("blue");
+        string folder = workspace.CreateFolder("dossier");
+        FolderCustomizer customizer = CreateCustomizer(workspace);
+
+        customizer.Apply(folder, "blue", Emblem.NoneId);
+        Assert.NotNull(customizer.Journal.Find(folder));
+
+        File.SetAttributes(DesktopIniFile.PathFor(folder), FileAttributes.Normal);
+        File.SetAttributes(folder, FileAttributes.Normal);
+        Directory.Delete(folder, recursive: true);
+
+        OperationResult result = customizer.Apply(folder, "blue", Emblem.NoneId);
+
+        Assert.False(result.Success);
+        Assert.Equal(ProtectedPaths.ReasonNotFound, result.ReasonKey);
+        Assert.Null(customizer.Journal.Find(folder));
+    }
 }

@@ -100,6 +100,69 @@ public sealed class AppliedJournal
     }
 
     /// <summary>
+    /// Retire les entrees dont le dossier a disparu du disque.
+    /// </summary>
+    /// <returns>Le nombre d'entrees retirees, 0 si le journal n'a pas pu etre reecrit.</returns>
+    /// <remarks>
+    /// Un dossier supprime ou renomme par l'utilisateur laisse sa trace derriere lui : rien ne nous
+    /// en informe, et le journal grossit indefiniment. Une trace perimee n'est pas qu'un poids
+    /// mort : si un dossier different reprend plus tard le meme chemin, <c>Apply</c> la prend pour
+    /// une colorisation anterieure et saute la sauvegarde de son <c>desktop.ini</c> (CLAUDE.md
+    /// §6.1).
+    /// <para>
+    /// Une entree n'est retiree que si le <b>volume</b> qui la porte repond. Un disque amovible
+    /// debranche ou un partage reseau hors ligne rend <see cref="Directory.Exists(string)"/> faux
+    /// sur un dossier bien vivant : le purger perdrait la trace de l'attribut <c>+r</c>, et
+    /// interdirait toute reinitialisation propre au retour du volume (CLAUDE.md §6.3).
+    /// </para>
+    /// </remarks>
+    public int PruneMissing()
+    {
+        int removed = 0;
+
+        bool written = Mutate(data =>
+        {
+            removed = data.Entries.RemoveAll(entry => IsGone(entry.Path));
+            return removed > 0;
+        });
+
+        return written ? removed : 0;
+    }
+
+    /// <summary>
+    /// Determine si un dossier suivi a reellement disparu, par opposition a simplement injoignable.
+    /// </summary>
+    /// <param name="folderPath">Chemin de l'entree.</param>
+    /// <returns>
+    /// <see langword="true"/> seulement si le volume repond et que le dossier n'y est plus. Dans le
+    /// doute, la reponse est <see langword="false"/> : garder une trace inutile est benin, en
+    /// perdre une ne l'est pas.
+    /// </returns>
+    private static bool IsGone(string folderPath)
+    {
+        if (string.IsNullOrWhiteSpace(folderPath))
+        {
+            return true;
+        }
+
+        try
+        {
+            string full = Normalize(folderPath);
+            if (Directory.Exists(full))
+            {
+                return false;
+            }
+
+            string? root = Path.GetPathRoot(full);
+            return !string.IsNullOrEmpty(root) && Directory.Exists(root);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Lit, modifie et reecrit le journal sous verrou.
     /// </summary>
     /// <param name="mutation">

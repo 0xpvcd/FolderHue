@@ -149,4 +149,72 @@ public sealed class AppliedJournalTests
 
         Assert.Single(journal.ReadAll());
     }
+    [Fact]
+    public void PruneMissing_RetireLaTraceDUnDossierSupprime()
+    {
+        using var workspace = new TempWorkspace();
+        var journal = new AppliedJournal(workspace.AppPaths.JournalFile);
+        string vivant = workspace.CreateFolder("vivant");
+        string disparu = workspace.CreateFolder("disparu");
+
+        journal.Upsert(Entry(vivant));
+        journal.Upsert(Entry(disparu));
+        Directory.Delete(disparu);
+
+        Assert.Equal(1, journal.PruneMissing());
+        Assert.Single(journal.ReadAll());
+        Assert.NotNull(journal.Find(vivant));
+        Assert.Null(journal.Find(disparu));
+    }
+
+    [Fact]
+    public void PruneMissing_NEcritRienQuandTousLesDossiersSontLa()
+    {
+        using var workspace = new TempWorkspace();
+        var journal = new AppliedJournal(workspace.AppPaths.JournalFile);
+        string folder = workspace.CreateFolder("dossier");
+
+        journal.Upsert(Entry(folder));
+
+        Assert.Equal(0, journal.PruneMissing());
+        Assert.Single(journal.ReadAll());
+    }
+
+    [Fact]
+    public void PruneMissing_ConserveLaTraceDUnVolumeInjoignable()
+    {
+        // Un disque amovible debranche ou un partage hors ligne rend Directory.Exists faux sur un
+        // dossier bien vivant. Purger son entree perdrait la trace de l'attribut +r, et
+        // interdirait toute reinitialisation propre au retour du volume (CLAUDE.md §6.3).
+        string? absent = FirstUnusedDriveLetter();
+        if (absent is null)
+        {
+            // Machine dont toutes les lettres sont prises : le cas n'est pas simulable ici.
+            return;
+        }
+
+        using var workspace = new TempWorkspace();
+        var journal = new AppliedJournal(workspace.AppPaths.JournalFile);
+        string offline = absent + @"\dossier\colorise";
+
+        journal.Upsert(Entry(offline));
+
+        Assert.Equal(0, journal.PruneMissing());
+        Assert.NotNull(journal.Find(offline));
+    }
+
+    /// <summary>Retourne une racine de lecteur absente de la machine, ou null s'il n'y en a pas.</summary>
+    private static string? FirstUnusedDriveLetter()
+    {
+        for (char letter = 'Z'; letter >= 'D'; letter--)
+        {
+            string root = letter + @":\";
+            if (!Directory.Exists(root))
+            {
+                return letter + ":";
+            }
+        }
+
+        return null;
+    }
 }
