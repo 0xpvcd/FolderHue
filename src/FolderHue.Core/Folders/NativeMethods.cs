@@ -56,6 +56,113 @@ internal static partial class NativeMethods
     [LibraryImport("shell32.dll", EntryPoint = "SHGetKnownFolderPath")]
     private static partial int SHGetKnownFolderPath(in Guid rfid, uint dwFlags, IntPtr hToken, out IntPtr ppszPath);
 
+    /// <summary>La personnalisation porte sur le fichier d'icone. <c>FCSM_ICONFILE</c>, shlobj_core.h.</summary>
+    private const uint FCSM_ICONFILE = 0x00000010;
+
+    /// <summary>Ecrire sans relire l'existant. <c>FCS_FORCEWRITE</c>, shlobj_core.h.</summary>
+    private const uint FCS_FORCEWRITE = 0x00000002;
+
+    /// <summary>
+    /// Personnalisation d'un dossier. <c>SHFOLDERCUSTOMSETTINGS</c>, shlobj_core.h.
+    /// </summary>
+    /// <remarks>
+    /// La disposition sequentielle par defaut reproduit celle du C en 64 bits. Seuls
+    /// <c>dwSize</c>, <c>dwMask</c>, <c>pszIconFile</c>, <c>cchIconFile</c> et <c>iIconIndex</c>
+    /// nous concernent ; les autres champs restent a zero et sont ignores grace au masque.
+    /// </remarks>
+    [StructLayout(LayoutKind.Sequential)]
+    private struct FolderCustomSettings
+    {
+        internal uint Size;
+        internal uint Mask;
+        internal IntPtr ViewId;
+        internal IntPtr WebViewTemplate;
+        internal uint WebViewTemplateLength;
+        internal IntPtr WebViewTemplateVersion;
+        internal IntPtr InfoTip;
+        internal uint InfoTipLength;
+        internal IntPtr Clsid;
+        internal uint Flags;
+        internal IntPtr IconFile;
+        internal uint IconFileLength;
+        internal int IconIndex;
+        internal IntPtr Logo;
+        internal uint LogoLength;
+    }
+
+    /// <summary>
+    /// Lit ou ecrit la personnalisation d'un dossier.
+    /// </summary>
+    /// <remarks>
+    /// Win32 : <c>SHGetSetFolderCustomSettings</c>, shell32.dll, en-tete shlobj_core.h.
+    /// Doc : https://learn.microsoft.com/windows/win32/api/shlobj_core/nf-shlobj_core-shgetsetfoldercustomsettings
+    /// C'est l'API qu'emploie l'Explorateur lui-meme pour
+    /// <i>Proprietes > Personnaliser > Changer d'icone</i>.
+    /// </remarks>
+    [LibraryImport("shell32.dll", EntryPoint = "SHGetSetFolderCustomSettings", StringMarshalling = StringMarshalling.Utf16)]
+    private static partial int SHGetSetFolderCustomSettings(ref FolderCustomSettings pfcs, string pszPath, uint dwReadWrite);
+
+    /// <summary>
+    /// Reecrit l'icone d'un dossier par l'API officielle de personnalisation.
+    /// </summary>
+    /// <param name="folderPath">Chemin du dossier.</param>
+    /// <param name="iconFile">Chemin du fichier icone.</param>
+    /// <param name="iconIndex">Index de l'icone dans ce fichier.</param>
+    /// <returns><see langword="true"/> si l'appel a abouti.</returns>
+    /// <remarks>
+    /// <b>C'est cet appel, et lui seul, qui rafraichit une vue deja ouverte.</b> Mesure a l'ecran,
+    /// sur une fenetre ouverte sur le dossier parent : ecrire <c>desktop.ini</c> nous-memes puis
+    /// notifier le shell ne repeint <b>jamais</b> l'icone — ni avec <c>SHCNE_UPDATEITEM</c>,
+    /// <c>SHCNE_UPDATEDIR</c>, <c>SHCNE_ATTRIBUTES</c>, <c>SHCNE_RENAMEFOLDER</c>,
+    /// <c>SHCNE_UPDATEIMAGE</c> ou <c>SHCNE_ASSOCCHANGED</c>, en chemin comme en PIDL, avec ou
+    /// sans <c>SHCNF_FLUSH</c> ; ni apres un F5 ; ni apres un aller-retour de navigation. Seule
+    /// une fenetre nouvellement ouverte montrait la bonne couleur. Le meme changement passe par
+    /// cette fonction repeint l'icone dans la seconde.
+    /// <para>
+    /// L'ecriture de <c>desktop.ini</c> reste la notre : c'est elle qui fusionne les cles
+    /// existantes et gere la sauvegarde (CLAUDE.md §6.1). Cet appel vient ensuite reposer la meme
+    /// valeur par le chemin officiel, ce qui declenche l'invalidation de cache interne que
+    /// <c>SHChangeNotify</c> ne declenche pas.
+    /// </para>
+    /// </remarks>
+    internal static bool SetFolderIcon(string folderPath, string iconFile, int iconIndex)
+    {
+        if (string.IsNullOrEmpty(folderPath) || string.IsNullOrEmpty(iconFile))
+        {
+            return false;
+        }
+
+        IntPtr buffer = IntPtr.Zero;
+
+        try
+        {
+            buffer = Marshal.StringToHGlobalUni(iconFile);
+
+            var settings = new FolderCustomSettings
+            {
+                Size = (uint)Marshal.SizeOf<FolderCustomSettings>(),
+                Mask = FCSM_ICONFILE,
+                IconFile = buffer,
+                IconFileLength = (uint)(iconFile.Length + 1),
+                IconIndex = iconIndex,
+            };
+
+            return SHGetSetFolderCustomSettings(ref settings, folderPath, FCS_FORCEWRITE) >= 0;
+        }
+        catch (Exception e) when (e is DllNotFoundException or EntryPointNotFoundException)
+        {
+            // Environnement sans shell : la colorisation reste correcte sur disque.
+            return false;
+        }
+        finally
+        {
+            if (buffer != IntPtr.Zero)
+            {
+                Marshal.FreeHGlobal(buffer);
+            }
+        }
+    }
+
     /// <summary>
     /// Demande a l'Explorateur de rafraichir l'affichage d'un dossier.
     /// </summary>

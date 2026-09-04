@@ -190,9 +190,9 @@ public sealed class FolderCustomizer
                 AppliedUtc = DateTimeOffset.UtcNow,
             });
 
-            // Avant de notifier, et non apres : l'Explorateur doit trouver une date fraiche
-            // quand il vient relire le dossier.
-            FolderAttributes.TouchFolder(full);
+            // L'API officielle repose la meme icone. C'est elle, et non la notification, qui
+            // repeint une vue deja ouverte : voir NativeMethods.SetFolderIcon.
+            NativeMethods.SetFolderIcon(full, iconPath, 0);
 
             NativeMethods.NotifyFolderChanged(full);
             _log.Info($"Colorise : « {full} » en {colorId}/{resolvedEmblemId}.");
@@ -323,8 +323,6 @@ public sealed class FolderCustomizer
             }
 
             _journal.Remove(full);
-
-            FolderAttributes.TouchFolder(full);
             NativeMethods.NotifyFolderChanged(full);
             _log.Info($"Reinitialise : « {full} ».");
             return OperationResult.Ok;

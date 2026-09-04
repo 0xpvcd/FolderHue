@@ -125,48 +125,4 @@ public static class FolderAttributes
             File.SetAttributes(folderPath, attributes & ~FileAttributes.ReadOnly);
         }
     }
-
-    /// <summary>
-    /// Repositionne la date de derniere ecriture d'un dossier a l'instant present.
-    /// </summary>
-    /// <param name="folderPath">Chemin du dossier.</param>
-    /// <remarks>
-    /// Sans cet appel, changer la couleur d'un dossier <b>deja</b> colorise ne se voit pas.
-    /// <para>
-    /// Reecrire <c>desktop.ini</c> ne touche que le contenu du fichier : l'entree de repertoire du
-    /// dossier, elle, ne bouge pas. Une creation ou une suppression la modifie, une reecriture sur
-    /// place non. Mesure sur trois applications successives : la premiere, qui cree le fichier,
-    /// avance la date du dossier ; les deux suivantes la laissent a la milliseconde pres.
-    /// </para>
-    /// <para>
-    /// C'est exactement le motif observe a l'ecran : dans une serie d'applications sur le meme
-    /// dossier, seule la premiere repeignait. L'explication retenue est que <c>SHChangeNotify</c>
-    /// invite l'Explorateur a regarder de nouveau, mais qu'il consulte d'abord ce qu'il a en cache
-    /// pour ce dossier, n'y voit aucune date plus recente et en conclut qu'il n'y a rien a relire.
-    /// Avancer la date lui retire cette echappatoire. Le mecanisme interne n'est pas documente ;
-    /// ce qui est mesure, c'est l'horodatage, et ce qui se verifie, c'est l'icone a l'ecran.
-    /// </para>
-    /// <para>
-    /// L'echec est absorbe : un dossier dont on ne peut pas changer l'horodatage reste colorise
-    /// correctement, il faudra seulement un F5 pour le voir.
-    /// </para>
-    /// </remarks>
-    /// <exception cref="ArgumentException"><paramref name="folderPath"/> est vide.</exception>
-    public static void TouchFolder(string folderPath)
-    {
-        ArgumentException.ThrowIfNullOrEmpty(folderPath);
-
-        if (!Directory.Exists(folderPath))
-        {
-            return;
-        }
-
-        try
-        {
-            Directory.SetLastWriteTimeUtc(folderPath, DateTime.UtcNow);
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentOutOfRangeException)
-        {
-        }
-    }
 }
