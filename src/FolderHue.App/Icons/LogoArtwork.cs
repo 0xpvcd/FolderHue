@@ -26,11 +26,11 @@ internal static class LogoArtwork
     /// <summary>Rayon des coins du carre, en part du cote. <c>rx=143.36</c> sur 512 dans le SVG.</summary>
     private const float CornerRatio = 143.36f / 512f;
 
-    /// <summary>Marge avant le glyphe, en part du cote. <c>translate(117.76)</c> dans le SVG.</summary>
-    private const float GlyphOffsetRatio = 117.76f / 512f;
+    /// <summary>Marge avant le glyphe, en part du cote. <c>translate(51.2)</c> dans le SVG.</summary>
+    private const float GlyphOffsetRatio = 51.2f / 512f;
 
-    /// <summary>Cote occupe par le glyphe, en part du cote. <c>24 x scale(11.52)</c> dans le SVG.</summary>
-    private const float GlyphSpanRatio = 276.48f / 512f;
+    /// <summary>Cote occupe par le glyphe, en part du cote. <c>24 x scale(17.0667)</c> dans le SVG.</summary>
+    private const float GlyphSpanRatio = 409.6f / 512f;
 
     /// <summary>Cote de la boite de dessin du glyphe, en unites SVG.</summary>
     private const float GlyphViewBox = 24f;
@@ -52,7 +52,33 @@ internal static class LogoArtwork
     /// </remarks>
     private const float GradientStop = 0.1464f;
 
-    // Degrade du SVG : #ff5b3d en haut a droite, #ff9f0a en bas a gauche.
+    /// <summary>
+    /// L'arc-en-ciel du fond, du coin haut-droit au coin bas-gauche.
+    /// </summary>
+    /// <remarks>
+    /// Six arrets et non davantage : les puces ne sont rendues qu'entre 16 et 64 px
+    /// (<see cref="IconSizes.Logo"/>), ou un degrade plus decoupe ne se lit plus que comme du
+    /// bruit.
+    /// <para>
+    /// Les luminances ne sont pas uniformes, et c'est voulu. A saturation pleine, un jaune clair
+    /// et un bleu sombre n'opposent pas le meme contraste au glyphe blanc casse : la luminance de
+    /// chaque teinte est donc calee pour que le contraste avec <see cref="GlyphColor"/> reste
+    /// d'environ 3,2:1 partout, soit le minimum WCAG des elements graphiques avec une marge. Un
+    /// arc-en-ciel « naif » a luminance constante ferait disparaitre le glyphe dans le jaune.
+    /// </para>
+    /// </remarks>
+    private static readonly Color[] BrandGradient =
+    [
+        Color.FromArgb(0xFF, 0x4C, 0x30),
+        Color.FromArgb(0xC5, 0x7D, 0x00),
+        Color.FromArgb(0x50, 0xA0, 0x00),
+        Color.FromArgb(0x00, 0xA0, 0x80),
+        Color.FromArgb(0x4D, 0x88, 0xFF),
+        Color.FromArgb(0xC8, 0x59, 0xFF),
+    ];
+
+    // Teintes de reference des declinaisons : le rouge-orange et l'ambre historiques de la marque.
+    // Volontairement PAS l'arc-en-ciel, voir TintSourceHighlight.
     private static readonly Color GradientStart = Color.FromArgb(0xFF, 0x5B, 0x3D);
     private static readonly Color GradientEnd = Color.FromArgb(0xFF, 0x9F, 0x0A);
 
@@ -178,20 +204,48 @@ internal static class LogoArtwork
     /// <returns>Le pinceau, dont l'appelant devient proprietaire.</returns>
     private static LinearGradientBrush CreateBackgroundBrush(float size, bool brand)
     {
-        Color start = brand ? GradientStart : TintSourceStart;
-        Color end = brand ? GradientEnd : TintSourceEnd;
+        Color[] stops = brand ? BrandGradient : [TintSourceStart, TintSourceEnd];
 
         // Du coin haut-droit au coin bas-gauche : c'est la diagonale que suit rotate(135).
         var brush = new LinearGradientBrush(
-            new PointF(size, 0f), new PointF(0f, size), start, end);
+            new PointF(size, 0f), new PointF(0f, size), stops[0], stops[^1]);
 
-        brush.InterpolationColors = new ColorBlend(4)
-        {
-            Colors = [start, start, end, end],
-            Positions = [0f, GradientStop, 1f - GradientStop, 1f],
-        };
+        brush.InterpolationColors = BuildPaddedBlend(stops);
 
         return brush;
+    }
+
+    /// <summary>
+    /// Repartit des arrets de couleur le long de la diagonale en reproduisant
+    /// <c>spreadMethod="pad"</c>.
+    /// </summary>
+    /// <param name="stops">Les teintes, du coin haut-droit au coin bas-gauche. Au moins deux.</param>
+    /// <returns>Le melange a poser sur le pinceau.</returns>
+    /// <remarks>
+    /// Les arrets sont resserres dans <c>[GradientStop, 1 - GradientStop]</c>, la portion de la
+    /// diagonale que couvre reellement l'axe du SVG, puis doubles aux deux bornes. Sans ce
+    /// doublage GDI+ <b>repete</b> le degrade au-dela de son axe la ou le SVG le prolonge en
+    /// aplat, et deux bandes diagonales apparaissent dans les coins (voir
+    /// <see cref="GradientStop"/>).
+    /// </remarks>
+    private static ColorBlend BuildPaddedBlend(Color[] stops)
+    {
+        var colors = new Color[stops.Length + 2];
+        var positions = new float[stops.Length + 2];
+        float span = 1f - (2f * GradientStop);
+
+        for (int i = 0; i < stops.Length; i++)
+        {
+            colors[i + 1] = stops[i];
+            positions[i + 1] = GradientStop + (span * i / (stops.Length - 1));
+        }
+
+        colors[0] = stops[0];
+        positions[0] = 0f;
+        colors[^1] = stops[^1];
+        positions[^1] = 1f;
+
+        return new ColorBlend(colors.Length) { Colors = colors, Positions = positions };
     }
 
     /// <summary>

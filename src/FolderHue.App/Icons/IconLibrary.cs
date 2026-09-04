@@ -24,7 +24,7 @@ public sealed class IconLibrary
     /// <summary>
     /// Version du rendu. A incrementer des que le dessin change, pour forcer une regeneration.
     /// </summary>
-    private const int RendererVersion = 3;
+    private const int RendererVersion = 4;
 
     private readonly AppPaths _paths;
     private readonly Log _log;
