@@ -11,8 +11,8 @@ namespace FolderHue.Shell.Commands;
 /// </summary>
 /// <remarks>
 /// C'est la seule classe exposee par le CLSID du serveur COM. Le sous-menu compte
-/// 12 couleurs + « Embleme » + « Reinitialiser », soit 14 elements — les separateurs ne comptent
-/// pas dans la limite de 16 par handler (CLAUDE.md §4.4).
+/// 12 couleurs + « Couleur d'origine » + « Embleme » + « Reinitialiser », soit 15 elements — les
+/// separateurs ne comptent pas dans la limite de 16 par handler (CLAUDE.md §4.4).
 /// </remarks>
 [GeneratedComClass]
 internal sealed partial class RootCommand : ExplorerCommandBase
@@ -36,6 +36,12 @@ internal sealed partial class RootCommand : ExplorerCommandBase
         {
             commands.Add(new ColorCommand(color));
         }
+
+        // « Couleur d'origine » se choisit comme une teinte, en fin de palette. Elle rend au
+        // dossier son icone d'origine en conservant son embleme : reposer la couleur ne doit pas
+        // effacer le marqueur de statut, exactement comme l'inverse (CLAUDE.md §4.3). Sans
+        // embleme, Apply retombe de lui-meme sur une reinitialisation.
+        commands.Add(new ColorCommand(PaletteCatalog.Neutral));
 
         commands.Add(new SeparatorCommand());
         commands.Add(new EmblemMenuCommand());
@@ -63,8 +69,16 @@ internal sealed partial class ColorCommand(FolderColor color) : ExplorerCommandB
     /// La declinaison du logo dans cette teinte. Simple concatenation de chaines : aucun acces
     /// disque, meme pour verifier que le fichier existe. L'Explorateur appelle cette propriete a
     /// chaque ouverture du menu.
+    /// <para>
+    /// Exception faite de « Couleur d'origine », dont la puce est <c>neutral.ico</c> — l'icone de
+    /// dossier reelle de la machine — et non une declinaison du logo. La regle du menu est qu'une
+    /// puce ressemble a l'icone que le dossier prendra (CLAUDE.md §9) ; une declinaison neutre
+    /// n'aurait rien teinte et serait restee orange, annoncant une couleur au lieu de son retrait.
+    /// </para>
     /// </remarks>
-    protected override string? IconResource => ShellServices.Paths.LogoPath(_color.Id) + ",0";
+    protected override string? IconResource => _color.IsNeutral
+        ? ShellServices.Paths.IconPath(_color.Id, null) + ",0"
+        : ShellServices.Paths.LogoPath(_color.Id) + ",0";
 
     /// <inheritdoc/>
     protected override void Execute(IReadOnlyList<string> paths)
