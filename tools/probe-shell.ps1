@@ -71,9 +71,9 @@ public static class FolderHueProbe
 
 # --- Identites, a garder alignees sur Com/Guids.cs -------------------------
 
+# Le handler herite (E647099A, IShellExtInit) a ete retire : il doublait l'entree de menu (§4.6).
 $clsids = @(
     @{ Nom = 'commande moderne (IExplorerCommand)'; Clsid = [Guid] 'C228C2F8-706B-4A2E-9C48-74F3062BE146'; Iid = [Guid] 'a08ce4d0-fa25-44ab-b57c-c7b1c323e0b9' }
-    @{ Nom = 'menu classique (IShellExtInit)';      Clsid = [Guid] 'E647099A-651E-4267-A7DA-1296BD370777'; Iid = [Guid] '000214e8-0000-0000-c000-000000000046' }
 )
 
 # --- 1. Ou la DLL est-elle chargee ? ---------------------------------------

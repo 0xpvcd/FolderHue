@@ -41,17 +41,13 @@ internal static class Exports
 
         try
         {
-            // Le serveur expose deux classes : la commande moderne, rendue par le menu direct de
-            // Windows 11, et le handler herite, seul visible dans le menu classique.
+            // Le serveur n'expose qu'une classe : la commande moderne. Elle est rendue par le
+            // menu direct de Windows 11 comme par le menu classique.
             Func<object>? create = null;
 
             if (*rclsid == Guids.RootCommandClsid)
             {
                 create = static () => new RootCommand();
-            }
-            else if (*rclsid == Guids.ClassicMenuClsid)
-            {
-                create = static () => new ClassicContextMenu();
             }
 
             if (create is null)

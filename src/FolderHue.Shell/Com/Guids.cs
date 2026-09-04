@@ -17,20 +17,6 @@ internal static class Guids
     /// <summary>CLSID du serveur COM, sous forme binaire.</summary>
     internal static Guid RootCommandClsid { get; } = new(RootCommandClsidText);
 
-    /// <summary>
-    /// CLSID du handler de menu contextuel herite.
-    /// </summary>
-    /// <remarks>
-    /// Un verbe package <c>desktop4</c> n'est rendu que par le menu moderne de Windows 11. Les
-    /// utilisateurs qui restaurent le menu classique par le tweak
-    /// <c>{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}</c> ne verraient donc jamais l'entree. Ce second
-    /// CLSID expose la meme palette via <c>IContextMenu</c>, comme le fait PowerToys.
-    /// </remarks>
-    internal const string ClassicMenuClsidText = "E647099A-651E-4267-A7DA-1296BD370777";
-
-    /// <summary>CLSID du handler herite, sous forme binaire.</summary>
-    internal static Guid ClassicMenuClsid { get; } = new(ClassicMenuClsidText);
-
     /// <summary>IID de <c>IUnknown</c>.</summary>
     internal static Guid IUnknown { get; } = new("00000000-0000-0000-C000-000000000046");
 
@@ -42,7 +28,4 @@ internal static class Guids
 
     /// <summary>IID de <c>IEnumExplorerCommand</c>.</summary>
     internal static Guid IEnumExplorerCommand { get; } = new("a88826f8-186f-4987-aade-ea0cef8fbfe8");
-
-    /// <summary>IID de <c>IShellItemArray</c>.</summary>
-    internal static Guid IShellItemArray { get; } = new("b63ea76d-1f85-456f-a19c-48159efa858b");
 }

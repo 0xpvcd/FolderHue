@@ -125,35 +125,25 @@ function Assert-IdentityConsistency {
         }
     }
 
-    if ($guidsText -notmatch 'ClassicMenuClsidText\s*=\s*"([0-9A-Fa-f-]{36})"') {
-        throw "Impossible de lire ClassicMenuClsidText dans $guidsFile."
-    }
-    $classicClsid = $Matches[1]
-
     $appxText = Get-Content $appxManifest -Raw
 
-    # La commande moderne doit apparaitre comme classe COM et comme verbe desktop5.
+    # Le CLSID doit apparaitre comme classe COM et comme verbe desktop5.
     foreach ($attribute in @('Id', 'Clsid')) {
         if ($appxText -notmatch "$attribute=`"$([regex]::Escape($clsid))`"") {
             throw "Le CLSID $clsid n'apparait pas en tant que $attribute dans AppxManifest.xml."
         }
     }
 
-    # Le handler herite doit apparaitre comme classe COM et comme ExtensionHandler desktop9.
-    foreach ($attribute in @('Id', 'Clsid')) {
-        if ($appxText -notmatch "$attribute=`"$([regex]::Escape($classicClsid))`"") {
-            throw "Le CLSID herite $classicClsid n'apparait pas en tant que $attribute dans AppxManifest.xml."
-        }
+    # Le handler herite a ete retire : il produisait une SECONDE entree « FolderHue » dans le menu
+    # classique, sans icone et sans effet au clic, a cote de celle du verbe packagee qui, elle,
+    # fonctionne (CLAUDE.md §4.6). Le manifeste ne doit donc plus le declarer.
+    # On vise l'attribut Category, pas la chaine seule : elle est aussi citee en commentaire.
+    if ($appxText -match 'Category="windows\.fileExplorerClassicContextMenuHandler"') {
+        throw ("L'extension windows.fileExplorerClassicContextMenuHandler est de retour dans le " +
+               'manifeste : elle ajoute une seconde entree de menu inerte. Voir CLAUDE.md §4.6.')
     }
 
-    # Un verbe desktop4 n'est rendu que par le menu moderne de Windows 11 : sans l'extension
-    # heritee, l'entree est invisible pour qui a restaure l'ancien menu.
-    if ($appxText -notmatch 'windows\.fileExplorerClassicContextMenuHandler') {
-        throw ("L'extension windows.fileExplorerClassicContextMenuHandler est absente du manifeste : " +
-               "l'entree n'apparaitra pas dans le menu contextuel classique.")
-    }
-
-    Write-Ok "CLSID $clsid (moderne) et $classicClsid (herite)"
+    Write-Ok "CLSID $clsid"
     Write-Ok "identite $($identity.Name) / $($identity.Publisher) / $($application.Id)"
 }
 

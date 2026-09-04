@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 
 <!--
   Manifeste MSIX de FolderHue.
@@ -23,8 +23,7 @@
   xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
   xmlns:desktop4="http://schemas.microsoft.com/appx/manifest/desktop/windows10/4"
   xmlns:desktop5="http://schemas.microsoft.com/appx/manifest/desktop/windows10/5"
-  xmlns:desktop9="http://schemas.microsoft.com/appx/manifest/desktop/windows10/9"
-  IgnorableNamespaces="uap uap10 rescap com desktop4 desktop5 desktop9">
+  IgnorableNamespaces="uap uap10 rescap com desktop4 desktop5">
 
   <Identity
     Name="FolderHueDev.FolderHue"
@@ -102,44 +101,25 @@
           </desktop4:FileExplorerContextMenus>
         </desktop4:Extension>
 
-        <!--
-          Menu contextuel classique. Un verbe desktop4 n'est rendu que par le menu direct de
-          Windows 11 : sans ce second handler, l'entree serait invisible pour qui a restaure
-          l'ancien menu via le tweak {86ca1aa0-34aa-4e8b-a509-50c905bae2a2}. PowerToys embarque
-          les deux implementations pour la meme raison.
-          L'enregistrement passe par le paquet, donc aucune ecriture registre de notre part
-          (CLAUDE.md §6.4). Requiert Windows 11 21H2 (build 22000).
-        -->
-        <desktop9:Extension Category="windows.fileExplorerClassicContextMenuHandler">
-          <desktop9:FileExplorerClassicContextMenuHandler>
-            <desktop9:ExtensionHandler
-              Type="Directory"
-              Clsid="E647099A-651E-4267-A7DA-1296BD370777" />
-          </desktop9:FileExplorerClassicContextMenuHandler>
-        </desktop9:Extension>
 
         <!--
-          Serveur COM du menu, OBLIGATOIREMENT un surrogate.
+          Serveur COM du menu, heberge dans un surrogate dllhost.exe.
 
-          On aimerait un com4:InProcessServer, qui ferait charger la DLL dans explorer.exe.
-          C'est impossible : makeappx refuse le paquet avec
+          La contrainte venait a l'origine de windows.fileExplorerClassicContextMenuHandler, qui
+          EXIGE un SurrogateServer et faisait refuser tout com4:InProcessServer :
 
             error 80080204 : Attribute "Clsid" ... must define an Element "Class"
             on element "SurrogateServer" on extension "windows.comServer"
 
-          L'extension windows.fileExplorerClassicContextMenuHandler EXIGE que son CLSID soit
-          declare sous un SurrogateServer. L'hebergement hors Explorateur n'est donc pas un
-          choix de notre part, c'est une contrainte de la plateforme (CLAUDE.md §4.7).
+          Cette extension a ete retiree (CLAUDE.md §4.6). Un hebergement in-proc redevient donc
+          peut-etre possible, ce qui supprimerait le demarrage a froid du surrogate au premier
+          clic droit (§4.7) : a verifier avant d'y toucher.
         -->
         <com:Extension Category="windows.comServer" uap10:RuntimeBehavior="packagedClassicApp">
           <com:ComServer>
             <com:SurrogateServer DisplayName="FolderHue Shell Extension">
               <com:Class
                 Id="C228C2F8-706B-4A2E-9C48-74F3062BE146"
-                Path="FolderHue.Shell.dll"
-                ThreadingModel="STA" />
-              <com:Class
-                Id="E647099A-651E-4267-A7DA-1296BD370777"
                 Path="FolderHue.Shell.dll"
                 ThreadingModel="STA" />
             </com:SurrogateServer>

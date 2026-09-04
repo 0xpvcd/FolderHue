@@ -40,62 +40,6 @@ internal static unsafe partial class NativeMethods
     [LibraryImport("kernel32.dll", EntryPoint = "GetModuleFileNameW", SetLastError = true)]
     private static partial uint GetModuleFileName(IntPtr hModule, char* lpFilename, uint nSize);
 
-    /// <summary>Element de menu textuel. <c>MF_STRING</c>, winuser.h.</summary>
-    internal const uint MfString = 0x00000000;
-
-    /// <summary>Sous-menu. <c>MF_POPUP</c>, winuser.h.</summary>
-    internal const uint MfPopup = 0x00000010;
-
-    /// <summary>Separateur. <c>MF_SEPARATOR</c>, winuser.h.</summary>
-    internal const uint MfSeparator = 0x00000800;
-
-    /// <summary>Position et non identifiant. <c>MF_BYPOSITION</c>, winuser.h.</summary>
-    internal const uint MfByPosition = 0x00000400;
-
-    /// <summary>
-    /// Cree un menu deroulant vide.
-    /// </summary>
-    /// <remarks>
-    /// Win32 : <c>CreatePopupMenu</c>, user32.dll, en-tete winuser.h.
-    /// Doc : https://learn.microsoft.com/windows/win32/api/winuser/nf-winuser-createpopupmenu
-    /// </remarks>
-    [LibraryImport("user32.dll", EntryPoint = "CreatePopupMenu", SetLastError = true)]
-    internal static partial IntPtr CreatePopupMenu();
-
-    /// <summary>
-    /// Ajoute un element a la fin d'un menu.
-    /// </summary>
-    /// <remarks>
-    /// Win32 : <c>AppendMenuW</c>, user32.dll, en-tete winuser.h.
-    /// Doc : https://learn.microsoft.com/windows/win32/api/winuser/nf-winuser-appendmenuw
-    /// </remarks>
-    [LibraryImport("user32.dll", EntryPoint = "AppendMenuW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    internal static partial bool AppendMenu(IntPtr hMenu, uint uFlags, UIntPtr uIDNewItem, string? lpNewItem);
-
-    /// <summary>
-    /// Insere un element a une position donnee.
-    /// </summary>
-    /// <remarks>
-    /// Win32 : <c>InsertMenuW</c>, user32.dll, en-tete winuser.h.
-    /// Doc : https://learn.microsoft.com/windows/win32/api/winuser/nf-winuser-insertmenuw
-    /// </remarks>
-    [LibraryImport("user32.dll", EntryPoint = "InsertMenuW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    internal static partial bool InsertMenu(IntPtr hMenu, uint uPosition, uint uFlags, UIntPtr uIDNewItem, string? lpNewItem);
-
-    /// <summary>
-    /// Construit un <c>IShellItemArray</c> a partir de l'objet de donnees d'une selection.
-    /// </summary>
-    /// <remarks>
-    /// Win32 : <c>SHCreateShellItemArrayFromDataObject</c>, shobjidl_core.h.
-    /// Doc : https://learn.microsoft.com/windows/win32/api/shobjidl_core/nf-shobjidl_core-shcreateshellitemarrayfromdataobject
-    /// C'est ce qui permet au handler herite de reutiliser exactement le meme code de lecture de
-    /// selection que la commande moderne.
-    /// </remarks>
-    [LibraryImport("shell32.dll", EntryPoint = "SHCreateShellItemArrayFromDataObject")]
-    internal static partial int SHCreateShellItemArrayFromDataObject(IntPtr pdo, in Guid riid, out IntPtr ppv);
-
     /// <summary>
     /// Dossier contenant <c>FolderHue.Shell.dll</c>.
     /// </summary>
