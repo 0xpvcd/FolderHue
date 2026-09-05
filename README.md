@@ -8,7 +8,7 @@
 
 [![Windows 10 and 11](https://img.shields.io/badge/Windows-10%201809%2B%20%7C%2011-0078D4?logo=windows&logoColor=white)](#requirements)
 [![Latest release](https://img.shields.io/github/v/release/0xpvcd/FolderHue?label=download)](https://github.com/0xpvcd/FolderHue/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/0xpvcd/FolderHue/total)](https://github.com/0xpvcd/FolderHue/releases)
+[![Downloads](https://img.shields.io/github/downloads/0xpvcd/FolderHue/latest/total)](https://github.com/0xpvcd/FolderHue/releases)
 [![MIT license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 </div>
