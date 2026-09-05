@@ -7,32 +7,31 @@ using FolderHue.Core.Storage;
 namespace FolderHue.App.Icons;
 
 /// <summary>
-/// Pre-genere et maintient la bibliotheque d'icones de <c>%LOCALAPPDATA%\FolderHue\icons</c>.
+/// Pre-generates and maintains the icon library in <c>%LOCALAPPDATA%\FolderHue\icons</c>.
 /// </summary>
 /// <remarks>
-/// Toute la palette est produite d'un coup, a l'installation. Le shell ne genere donc jamais rien :
-/// il se contente de pointer un fichier existant, ce qui le garde mince et rapide dans
-/// <c>explorer.exe</c> (CLAUDE.md §4.3).
+/// The whole palette is produced in one go, at install time. The shell therefore never generates
+/// anything: it merely points at an existing file, which keeps it thin and fast inside
+/// <c>explorer.exe</c> (CLAUDE.md 4.3).
 /// <para>
-/// Une icone par combinaison couleur + embleme, jamais copiee dans les dossiers de l'utilisateur
-/// (CLAUDE.md §4.2).
+/// One icon per color + emblem pair, never copied into the user's folders (CLAUDE.md 4.2).
 /// </para>
 /// </remarks>
 [SupportedOSPlatform("windows")]
 public sealed class IconLibrary
 {
     /// <summary>
-    /// Version du rendu. A incrementer des que le dessin change, pour forcer une regeneration.
+    /// Renderer version. Bump it whenever the drawing changes, to force a regeneration.
     /// </summary>
-    private const int RendererVersion = 4;
+    private const int RendererVersion = 5;
 
     private readonly AppPaths _paths;
     private readonly Log _log;
 
-    /// <summary>Construit la bibliotheque.</summary>
-    /// <param name="paths">Emplacements de travail.</param>
-    /// <param name="log">Journal de diagnostic.</param>
-    /// <exception cref="ArgumentNullException">Un argument vaut <see langword="null"/>.</exception>
+    /// <summary>Builds the library.</summary>
+    /// <param name="paths">Working locations.</param>
+    /// <param name="log">Diagnostic log.</param>
+    /// <exception cref="ArgumentNullException">An argument is <see langword="null"/>.</exception>
     public IconLibrary(AppPaths paths, Log log)
     {
         ArgumentNullException.ThrowIfNull(paths);
@@ -42,12 +41,12 @@ public sealed class IconLibrary
         _log = log;
     }
 
-    /// <summary>Construit la bibliotheque de la machine courante.</summary>
-    /// <returns>Une instance prete a l'emploi.</returns>
+    /// <summary>Builds the library for the current machine.</summary>
+    /// <returns>A ready-to-use instance.</returns>
     public static IconLibrary CreateDefault() => new(AppPaths.Default, Log.Default);
 
-    /// <summary>Indique si la bibliotheque est complete et a jour.</summary>
-    /// <returns><see langword="true"/> si aucune generation n'est necessaire.</returns>
+    /// <summary>Indicates whether the library is complete and up to date.</summary>
+    /// <returns><see langword="true"/> when no generation is needed.</returns>
     public bool IsUpToDate()
     {
         if (!File.Exists(_paths.IconLibraryStampFile))
@@ -87,15 +86,15 @@ public sealed class IconLibrary
     }
 
     /// <summary>
-    /// Genere toutes les icones manquantes.
+    /// Generates every missing icon.
     /// </summary>
     /// <param name="force">
-    /// <see langword="true"/> pour regenerer meme ce qui existe deja, par exemple apres un
-    /// changement de theme Windows.
+    /// <see langword="true"/> to regenerate even what already exists, for instance after a Windows
+    /// theme change.
     /// </param>
-    /// <param name="progress">Rapporte l'avancement sous la forme (produites, total).</param>
-    /// <returns>Le nombre d'icones effectivement ecrites.</returns>
-    /// <exception cref="InvalidOperationException">Le gabarit n'a pas pu etre extrait du shell.</exception>
+    /// <param name="progress">Reports progress as (produced, total).</param>
+    /// <returns>How many icons were actually written.</returns>
+    /// <exception cref="InvalidOperationException">The template could not be extracted from the shell.</exception>
     public int EnsureAll(bool force = false, IProgress<(int Done, int Total)>? progress = null)
     {
         _paths.EnsureDirectories();
@@ -128,8 +127,8 @@ public sealed class IconLibrary
             progress?.Report((++done, total));
         }
 
-        // Les puces du menu contextuel : le logo de la marque pour l'entree racine, une
-        // declinaison par teinte devant chaque couleur.
+        // The context menu chips: the brand logo for the root entry, and one tint per color in
+        // front of each palette entry.
         if (force || !File.Exists(_paths.BrandLogoPath))
         {
             LogoArtwork.WriteIcon(_paths.BrandLogoPath, null);
@@ -151,7 +150,7 @@ public sealed class IconLibrary
             progress?.Report((++done, total));
         }
 
-        // Les pastilles du sous-menu « Embleme », dessinees en grand pour rester lisibles a 16 px.
+        // The "Emblem" submenu badges, drawn large so that they stay legible at 16 px.
         foreach (Emblem emblem in PaletteCatalog.Emblems)
         {
             string path = _paths.EmblemChipPath(emblem.Id);
@@ -166,15 +165,15 @@ public sealed class IconLibrary
         }
 
         File.WriteAllText(_paths.IconLibraryStampFile, CurrentStamp());
-        _log.Info($"Bibliotheque d'icones a jour : {written} icone(s) ecrite(s) sur {total}.");
+        _log.Info($"Icon library up to date: {written} icon(s) written out of {total}.");
 
         return written;
     }
 
     /// <summary>
-    /// Charge le gabarit et rend un apercu, pour l'interface de reglages.
+    /// Loads the template and renders a preview, for the settings window.
     /// </summary>
-    /// <returns>Un moteur de rendu, ou <see langword="null"/> si le gabarit est indisponible.</returns>
+    /// <returns>A renderer, or <see langword="null"/> when the template is unavailable.</returns>
     internal static IconRenderer? TryCreateRenderer()
     {
         try
@@ -187,10 +186,9 @@ public sealed class IconLibrary
         }
     }
 
-    /// <summary>Chemins des puces de menu attendues dans la bibliotheque.</summary>
+    /// <summary>Paths of the menu chips the library is expected to hold.</summary>
     /// <returns>
-    /// Le logo de la marque, une declinaison par teinte de la palette, puis une pastille par
-    /// embleme.
+    /// The brand logo, one tint per palette color, then one badge per emblem.
     /// </returns>
     private IEnumerable<string> ChipPaths()
     {
@@ -209,8 +207,8 @@ public sealed class IconLibrary
 
     private static IEnumerable<(FolderColor Color, Emblem Emblem)> Combinations()
     {
-        // TintableColors et non Colors : la couleur neutre produit neutral.ico, l'icone de dossier
-        // d'origine, et ses combinaisons avec embleme.
+        // TintableColors and not Colors: the neutral color produces neutral.ico, the original
+        // folder icon, plus its combinations with an emblem.
         foreach (FolderColor color in PaletteCatalog.TintableColors)
         {
             foreach (Emblem emblem in PaletteCatalog.Emblems)
@@ -221,17 +219,17 @@ public sealed class IconLibrary
     }
 
     /// <summary>
-    /// Marqueur identifiant l'etat attendu de la bibliotheque.
+    /// Stamp identifying the library's expected state.
     /// </summary>
-    /// <returns>Une chaine qui change des que la palette ou le rendu evolue.</returns>
+    /// <returns>A string that changes as soon as the palette or the renderer does.</returns>
     private static string CurrentStamp() => string.Create(
         CultureInfo.InvariantCulture,
         $"v{RendererVersion};c{PaletteCatalog.Colors.Count};e{PaletteCatalog.Emblems.Count};s{IconSizes.All.Count}");
 
     /// <summary>
-    /// Ecrit le gabarit neutre sur disque, a titre de reference et de diagnostic.
+    /// Writes the neutral template to disk, for reference and diagnostics.
     /// </summary>
-    /// <param name="template">Les tampons BGRA extraits du shell.</param>
+    /// <param name="template">The BGRA buffers extracted from the shell.</param>
     private void WriteTemplateForReference(IReadOnlyDictionary<int, byte[]> template)
     {
         try
@@ -253,8 +251,8 @@ public sealed class IconLibrary
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException)
         {
-            // Le gabarit de reference n'est qu'un confort de diagnostic.
-            _log.Warn("Le gabarit de reference n'a pas pu etre ecrit : " + e.Message);
+            // The reference template is only a diagnostic convenience.
+            _log.Warn("The reference template could not be written: " + e.Message);
         }
     }
 }
