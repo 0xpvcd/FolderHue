@@ -5,32 +5,32 @@ using FolderHue.Core.Storage;
 namespace FolderHue.Core.Folders;
 
 /// <summary>
-/// Applique et retire la colorisation d'un dossier.
+/// Applies and removes a folder's coloring.
 /// </summary>
 /// <remarks>
-/// C'est le point d'entree metier appele par le menu contextuel comme par l'interface de reglages.
-/// Aucune methode publique ne leve : toute erreur est journalisee et convertie en
-/// <see cref="OperationResult"/> (CLAUDE.md §6.5).
+/// This is the business entry point, called by the context menu and by the settings window alike.
+/// No public method throws: every error is logged and turned into an
+/// <see cref="OperationResult"/> (CLAUDE.md 6.5).
 /// </remarks>
 [SupportedOSPlatform("windows")]
 public sealed class FolderCustomizer
 {
-    /// <summary>L'icone demandee n'a pas encore ete generee.</summary>
+    /// <summary>The requested icon has not been generated yet.</summary>
     public const string ReasonIconMissing = "Error_IconMissing";
 
-    /// <summary>L'identifiant de couleur est inconnu du catalogue.</summary>
+    /// <summary>The color identifier is unknown to the catalogue.</summary>
     public const string ReasonUnknownColor = "Error_UnknownColor";
 
-    /// <summary>L'identifiant d'embleme est inconnu du catalogue.</summary>
+    /// <summary>The emblem identifier is unknown to the catalogue.</summary>
     public const string ReasonUnknownEmblem = "Error_UnknownEmblem";
 
-    /// <summary>Les droits manquent pour modifier le dossier.</summary>
+    /// <summary>Permissions are missing to modify the folder.</summary>
     public const string ReasonAccessDenied = "Error_AccessDenied";
 
-    /// <summary>Une erreur d'entree / sortie est survenue.</summary>
+    /// <summary>An input / output error occurred.</summary>
     public const string ReasonIo = "Error_Io";
 
-    /// <summary>Les cles que nous ecrivons dans <c>desktop.ini</c>, et elles seules.</summary>
+    /// <summary>The keys we write into <c>desktop.ini</c>, and those only.</summary>
     private static readonly (string Section, string Key)[] OwnedKeys =
         [(DesktopIni.ShellClassInfoSection, DesktopIni.IconResourceKey)];
 
@@ -39,12 +39,12 @@ public sealed class FolderCustomizer
     private readonly AppliedJournal _journal;
     private readonly Log _log;
 
-    /// <summary>Construit un personnalisateur.</summary>
-    /// <param name="paths">Emplacements de travail.</param>
-    /// <param name="protection">Liste d'exclusion des dossiers a ne jamais modifier.</param>
-    /// <param name="journal">Journal des dossiers colorises.</param>
-    /// <param name="log">Journal de diagnostic.</param>
-    /// <exception cref="ArgumentNullException">Un argument vaut <see langword="null"/>.</exception>
+    /// <summary>Builds a customizer.</summary>
+    /// <param name="paths">Working locations.</param>
+    /// <param name="protection">Exclusion list of folders never to modify.</param>
+    /// <param name="journal">Journal of colored folders.</param>
+    /// <param name="log">Diagnostic log.</param>
+    /// <exception cref="ArgumentNullException">An argument is <see langword="null"/>.</exception>
     public FolderCustomizer(AppPaths paths, ProtectedPaths protection, AppliedJournal journal, Log log)
     {
         ArgumentNullException.ThrowIfNull(paths);
@@ -58,8 +58,8 @@ public sealed class FolderCustomizer
         _log = log;
     }
 
-    /// <summary>Construit un personnalisateur branche sur les emplacements reels de la machine.</summary>
-    /// <returns>Une instance prete a l'emploi.</returns>
+    /// <summary>Builds a customizer wired to the machine's real locations.</summary>
+    /// <returns>A ready-to-use instance.</returns>
     public static FolderCustomizer CreateDefault()
     {
         AppPaths paths = AppPaths.Default;
@@ -70,18 +70,18 @@ public sealed class FolderCustomizer
             Log.Default);
     }
 
-    /// <summary>Le journal des dossiers actuellement colorises.</summary>
+    /// <summary>The journal of currently colored folders.</summary>
     public AppliedJournal Journal => _journal;
 
     /// <summary>
-    /// Applique une couleur et un embleme a un dossier.
+    /// Applies a color and an emblem to a folder.
     /// </summary>
-    /// <param name="folderPath">Chemin du dossier.</param>
-    /// <param name="colorId">Identifiant de la couleur, issu de <see cref="PaletteCatalog"/>.</param>
+    /// <param name="folderPath">Path of the folder.</param>
+    /// <param name="colorId">Color identifier, from <see cref="PaletteCatalog"/>.</param>
     /// <param name="emblemId">
-    /// Identifiant de l'embleme, ou <see langword="null"/> pour conserver l'embleme deja applique.
+    /// Emblem identifier, or <see langword="null"/> to keep whichever emblem is already applied.
     /// </param>
-    /// <returns>Le resultat de l'operation.</returns>
+    /// <returns>The outcome of the operation.</returns>
     public OperationResult Apply(string folderPath, string colorId, string? emblemId)
     {
         try
@@ -89,9 +89,9 @@ public sealed class FolderCustomizer
             ProtectionResult protection = _protection.Evaluate(folderPath);
             if (protection.IsProtected)
             {
-                // Le dossier a disparu : le refus arrive avant que le chemin neutre n'atteigne
-                // Reset, qui est le seul endroit ou une trace perimee etait retiree. Sans cette
-                // purge l'entree survit indefiniment a son dossier.
+                // The folder is gone: the refusal happens before the neutral path reaches Reset,
+                // which used to be the only place a stale record was removed. Without this purge
+                // the entry outlives its folder indefinitely.
                 if (string.Equals(protection.ReasonKey, ProtectedPaths.ReasonNotFound, StringComparison.Ordinal))
                 {
                     _journal.PruneMissing();
@@ -103,8 +103,8 @@ public sealed class FolderCustomizer
             string full = Path.GetFullPath(folderPath).TrimEnd(Path.DirectorySeparatorChar);
             AppliedEntry? existing = _journal.Find(full);
 
-            // Un embleme non precise conserve celui deja en place : appliquer une couleur ne doit
-            // pas effacer le marqueur de statut, et inversement.
+            // An unspecified emblem keeps whichever one is in place: applying a color must not
+            // erase the status marker, and the other way round.
             string resolvedEmblemId = emblemId ?? existing?.EmblemId ?? Emblem.NoneId;
 
             if (PaletteCatalog.FindColor(colorId) is not FolderColor color)
@@ -117,9 +117,9 @@ public sealed class FolderCustomizer
                 return OperationResult.Failed(ReasonUnknownEmblem, resolvedEmblemId);
             }
 
-            // Ni teinte ni embleme : il n'y a plus rien a afficher. Ecrire un desktop.ini pointant
-            // sur une copie de l'icone d'origine serait du bruit sur le disque de l'utilisateur ;
-            // la seule action correcte est de rendre le dossier a son etat initial.
+            // Neither hue nor emblem: there is nothing left to show. Writing a desktop.ini
+            // pointing at a copy of the original icon would be noise on the user's disk; the only
+            // correct action is to return the folder to its initial state.
             if (color.IsNeutral && string.Equals(resolvedEmblemId, Emblem.NoneId, StringComparison.OrdinalIgnoreCase))
             {
                 return Reset(full);
@@ -128,18 +128,17 @@ public sealed class FolderCustomizer
             string iconPath = _paths.IconPath(colorId, resolvedEmblemId);
             if (!File.Exists(iconPath))
             {
-                // Le shell ne genere jamais d'icone : toute la palette est pre-generee a
-                // l'installation (CLAUDE.md §4.3). L'appelant relancera la pre-generation.
+                // The shell never generates an icon: the whole palette is pre-generated at
+                // install time (CLAUDE.md 4.3). The caller will rerun the pre-generation.
                 return OperationResult.Failed(ReasonIconMissing, iconPath);
             }
 
             string iniPath = DesktopIniFile.PathFor(full);
             string backupPath = DesktopIniFile.BackupPathFor(full);
 
-            // La sauvegarde ne se decide qu'a la PREMIERE application (CLAUDE.md §6.1).
-            // Ensuite, le desktop.ini en place est le notre : le sauvegarder reviendrait a prendre
-            // notre propre production pour l'original de l'utilisateur, et la reinitialisation le
-            // restaurerait au lieu de le supprimer.
+            // The backup is decided on the FIRST application only (CLAUDE.md 6.1). After that,
+            // the desktop.ini in place is ours: backing it up would mistake our own output for the
+            // user's original, and a reset would restore it instead of deleting it.
             bool hadDesktopIni = existing?.HadDesktopIni ?? File.Exists(iniPath);
             string? recordedBackup = existing?.BackupPath;
 
@@ -151,8 +150,8 @@ public sealed class FolderCustomizer
                     FolderAttributes.MakeHiddenSystem(backupPath);
                 }
 
-                // Une sauvegarde orpheline, laissee par une execution dont le journal a ete perdu,
-                // reste la trace de l'etat d'origine : on la reprend a notre compte.
+                // An orphaned backup, left by a run whose journal was lost, is still the record
+                // of the original state: adopt it.
                 if (File.Exists(backupPath))
                 {
                     recordedBackup = backupPath;
@@ -165,11 +164,11 @@ public sealed class FolderCustomizer
                 DesktopIni.IconResourceKey,
                 iconPath + ",0");
 
-            // L'attribut AVANT l'ecriture, et non l'inverse. L'Explorateur surveille lui-meme le
-            // contenu des dossiers : s'il relit le dossier dans l'intervalle, il le voit porteur
-            // d'un desktop.ini mais depourvu de l'attribut, en conclut « aucune personnalisation »
-            // et met ce verdict en cache. Dans l'autre sens, la fenetre est inoffensive : un
-            // dossier marque mais sans desktop.ini est simplement un dossier sans icone.
+            // The attribute BEFORE the write, not the other way round. Explorer watches folder
+            // contents for its own purposes: if it re-reads the folder in between, it sees a
+            // desktop.ini with no attribute, concludes "no customisation" and caches that verdict.
+            // The other way round the window is harmless: a marked folder with no desktop.ini is
+            // simply a folder with no icon.
             bool weSetReadOnly = FolderAttributes.EnsureFolderCustomizable(full);
 
             try
@@ -178,7 +177,7 @@ public sealed class FolderCustomizer
             }
             catch
             {
-                // L'attribut a ete pose pour une colorisation qui n'aura pas lieu : on le retire.
+                // The attribute was set for a coloring that will not happen: take it back off.
                 if (weSetReadOnly)
                 {
                     TryClearReadOnly(full);
@@ -198,12 +197,12 @@ public sealed class FolderCustomizer
                 AppliedUtc = DateTimeOffset.UtcNow,
             });
 
-            // L'API officielle repose la meme icone. C'est elle, et non la notification, qui
-            // repeint une vue deja ouverte : voir NativeMethods.SetFolderIcon.
+            // The official API re-writes the same icon. It, and not the notification, is what
+            // repaints an already-open view: see NativeMethods.SetFolderIcon.
             NativeMethods.SetFolderIcon(full, iconPath, 0);
 
             NativeMethods.NotifyFolderChanged(full);
-            _log.Info($"Colorise : « {full} » en {colorId}/{resolvedEmblemId}.");
+            _log.Info($"Colored: \"{full}\" as {colorId}/{resolvedEmblemId}.");
             return OperationResult.Ok;
         }
         catch (UnauthorizedAccessException e)
@@ -219,33 +218,33 @@ public sealed class FolderCustomizer
     }
 
     /// <summary>
-    /// Determine la couleur a conserver quand l'utilisateur ne choisit qu'un embleme.
+    /// Determines which color to keep when the user picks an emblem only.
     /// </summary>
-    /// <param name="folderPath">Le dossier concerne.</param>
+    /// <param name="folderPath">The folder concerned.</param>
     /// <returns>
-    /// La couleur deja appliquee, ou l'identifiant de <see cref="PaletteCatalog.Neutral"/> si le
-    /// dossier n'a jamais ete colorise.
+    /// The color already applied, or the identifier of <see cref="PaletteCatalog.Neutral"/> when
+    /// the folder was never colored.
     /// </returns>
     /// <remarks>
-    /// Le repli est la couleur d'origine, et surtout <b>pas</b> la premiere teinte de la palette :
-    /// poser un marqueur de statut ne doit pas choisir une couleur a la place de l'utilisateur.
+    /// The fallback is the original color, and emphatically <b>not</b> the first hue of the
+    /// palette: placing a status marker must not choose a color on the user's behalf.
     /// <para>
-    /// Le menu contextuel et l'application appellent tous deux cette methode : c'est elle qui
-    /// garantit qu'ils resolvent la couleur de la meme facon.
+    /// The context menu and the application both call this method: it is what guarantees they
+    /// resolve the color the same way.
     /// </para>
     /// </remarks>
     public string ResolveColorFor(string folderPath)
         => _journal.Find(folderPath)?.ColorId ?? PaletteCatalog.Neutral.Id;
 
     /// <summary>
-    /// Retire la colorisation d'un dossier et restaure son etat d'origine.
+    /// Removes a folder's coloring and restores its original state.
     /// </summary>
-    /// <param name="folderPath">Chemin du dossier.</param>
-    /// <returns>Le resultat de l'operation. Un dossier jamais colorise retourne un succes.</returns>
+    /// <param name="folderPath">Path of the folder.</param>
+    /// <returns>The outcome. A folder that was never colored returns success.</returns>
     /// <remarks>
-    /// La reinitialisation retire la cle <c>IconResource</c>, supprime <c>desktop.ini</c> s'il ne
-    /// contenait que nos cles, et ne retire l'attribut ReadOnly du dossier que si le journal
-    /// atteste que c'est nous qui l'avions pose (CLAUDE.md §6.3).
+    /// Resetting removes the <c>IconResource</c> key, deletes <c>desktop.ini</c> when it held
+    /// nothing but our keys, and removes the folder's ReadOnly attribute only when the journal
+    /// attests that we were the ones who set it (CLAUDE.md 6.3).
     /// </remarks>
     public OperationResult Reset(string folderPath)
     {
@@ -263,7 +262,7 @@ public sealed class FolderCustomizer
 
             if (!Directory.Exists(full))
             {
-                // Le dossier a disparu : on nettoie simplement la trace.
+                // The folder is gone: simply clean up the record.
                 _journal.Remove(full);
                 return OperationResult.Ok;
             }
@@ -275,8 +274,8 @@ public sealed class FolderCustomizer
                     DesktopIni.ShellClassInfoSection,
                     DesktopIni.IconResourceKey);
 
-                // On ne touche a l'icone que si elle est la notre : un dossier portant une icone
-                // posee par un autre outil doit rester intact.
+                // Touch the icon only when it is ours: a folder carrying an icon another tool
+                // set must be left intact.
                 bool ours = entry is not null || PointsToOurIcons(current);
 
                 if (ours)
@@ -285,8 +284,8 @@ public sealed class FolderCustomizer
 
                     if (original is not null)
                     {
-                        // Le dossier avait deja une icone avant notre passage : on la restaure au
-                        // lieu de la supprimer.
+                        // The folder already had an icon before we came along: restore it rather
+                        // than deleting it.
                         document.Content.SetValue(
                             DesktopIni.ShellClassInfoSection,
                             DesktopIni.IconResourceKey,
@@ -296,8 +295,8 @@ public sealed class FolderCustomizer
                     }
                     else
                     {
-                        // §6.3 : le fichier n'est supprime que s'il ne contenait que nos cles.
-                        // Le test se fait avant le retrait, tant que le fichier est intact.
+                        // 6.3: the file is deleted only when it held nothing but our keys. The
+                        // test runs before the removal, while the file is still intact.
                         bool onlyOurs = document.Content.ContainsOnlyKeys(OwnedKeys);
 
                         document.Content.RemoveValue(
@@ -312,7 +311,7 @@ public sealed class FolderCustomizer
                         }
                         else
                         {
-                            // Sinon on le laisse en place, allege de nos seules cles.
+                            // Otherwise leave it in place, lightened of our keys only.
                             DesktopIniFile.Write(iniPath, document);
                         }
                     }
@@ -332,7 +331,7 @@ public sealed class FolderCustomizer
 
             _journal.Remove(full);
             NativeMethods.NotifyFolderChanged(full);
-            _log.Info($"Reinitialise : « {full} ».");
+            _log.Info($"Reset: \"{full}\".");
             return OperationResult.Ok;
         }
         catch (UnauthorizedAccessException e)
@@ -348,12 +347,12 @@ public sealed class FolderCustomizer
     }
 
     /// <summary>
-    /// Retire l'attribut ReadOnly sans jamais lever.
+    /// Removes the ReadOnly attribute without ever throwing.
     /// </summary>
-    /// <param name="folderPath">Chemin du dossier.</param>
+    /// <param name="folderPath">Path of the folder.</param>
     /// <remarks>
-    /// Utilise sur le chemin d'erreur uniquement : l'exception d'origine doit remonter intacte,
-    /// pas etre masquee par un echec de nettoyage.
+    /// Used on the error path only: the original exception must travel up intact, not be masked by
+    /// a cleanup failure.
     /// </remarks>
     private static void TryClearReadOnly(string folderPath)
     {
@@ -373,7 +372,7 @@ public sealed class FolderCustomizer
             return false;
         }
 
-        // La valeur a la forme « chemin,index » : on isole le chemin avant la derniere virgule.
+        // The value has the form "path,index": isolate the path before the last comma.
         int comma = iconResource.LastIndexOf(',');
         string candidate = comma > 0 ? iconResource[..comma] : iconResource;
 

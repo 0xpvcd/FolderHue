@@ -5,7 +5,7 @@ using Xunit;
 namespace FolderHue.Core.Tests;
 
 /// <summary>
-/// Verifie la liste d'exclusion, qui n'est pas negociable (CLAUDE.md §6.2).
+/// Checks the exclusion list, which is not negotiable (CLAUDE.md 6.2).
 /// </summary>
 public sealed class ProtectedPathsTests
 {
@@ -18,7 +18,7 @@ public sealed class ProtectedPathsTests
     }
 
     [Fact]
-    public void Evaluate_RefuseLaRacineDUnVolume()
+    public void Evaluate_refuses_a_volume_root()
     {
         using var workspace = new TempWorkspace();
         var protection = new ProtectedPaths(new FakeKnownFolders([], []), workspace.AppPaths);
@@ -30,7 +30,7 @@ public sealed class ProtectedPathsTests
     }
 
     [Fact]
-    public void Evaluate_RefuseLaRacineDUnPartageReseau()
+    public void Evaluate_refuses_a_network_share_root()
     {
         using var workspace = new TempWorkspace();
         var protection = new ProtectedPaths(new FakeKnownFolders([], []), workspace.AppPaths);
@@ -42,7 +42,7 @@ public sealed class ProtectedPathsTests
     }
 
     [Fact]
-    public void Evaluate_RefuseToutSousUneArborescenceSysteme()
+    public void Evaluate_refuses_everything_under_a_system_tree()
     {
         using var workspace = new TempWorkspace();
         string windows = workspace.CreateFolder("Windows");
@@ -56,7 +56,7 @@ public sealed class ProtectedPathsTests
     }
 
     [Fact]
-    public void Evaluate_RefuseUnDossierConnuMaisAutoriseSonContenu()
+    public void Evaluate_refuses_a_known_folder_but_allows_its_contents()
     {
         using var workspace = new TempWorkspace();
         string documents = workspace.CreateFolder("Documents");
@@ -65,15 +65,15 @@ public sealed class ProtectedPathsTests
 
         var protection = new ProtectedPaths(new FakeKnownFolders([documents], []), workspace.AppPaths);
 
-        // Le dossier connu lui-meme est refuse...
+        // The known folder itself is refused...
         Assert.Equal(ProtectedPaths.ReasonKnownFolder, protection.Evaluate(documents).ReasonKey);
 
-        // ...mais son contenu reste colorisable, sinon la fonctionnalite perdrait son interet.
+        // ...but what it contains stays colorable, or the feature would lose its point.
         Assert.False(protection.Evaluate(project).IsProtected);
     }
 
     [Fact]
-    public void Evaluate_RefuseNotrePropreEspaceDeTravail()
+    public void Evaluate_refuses_our_own_workspace()
     {
         using var workspace = new TempWorkspace();
         var protection = new ProtectedPaths(new FakeKnownFolders([], []), workspace.AppPaths);
@@ -85,12 +85,12 @@ public sealed class ProtectedPathsTests
     }
 
     [Fact]
-    public void Evaluate_RefuseUnDossierInexistant()
+    public void Evaluate_refuses_a_folder_that_does_not_exist()
     {
         using var workspace = new TempWorkspace();
         var protection = new ProtectedPaths(new FakeKnownFolders([], []), workspace.AppPaths);
 
-        string missing = Path.Combine(workspace.CreateFolder("parent"), "absent");
+        string missing = Path.Combine(workspace.CreateFolder("parent"), "missing");
 
         Assert.Equal(ProtectedPaths.ReasonNotFound, protection.Evaluate(missing).ReasonKey);
     }
@@ -98,7 +98,7 @@ public sealed class ProtectedPathsTests
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
-    public void Evaluate_RefuseUnCheminVide(string path)
+    public void Evaluate_refuses_an_empty_path(string path)
     {
         using var workspace = new TempWorkspace();
         var protection = new ProtectedPaths(new FakeKnownFolders([], []), workspace.AppPaths);
@@ -107,7 +107,7 @@ public sealed class ProtectedPathsTests
     }
 
     [Fact]
-    public void Evaluate_AccepteUnDossierOrdinaire()
+    public void Evaluate_accepts_an_ordinary_folder()
     {
         using var workspace = new TempWorkspace();
         var protection = new ProtectedPaths(new FakeKnownFolders([], []), workspace.AppPaths);
@@ -118,7 +118,7 @@ public sealed class ProtectedPathsTests
     }
 
     [Fact]
-    public void Evaluate_RefuseUnePointDeJonction()
+    public void Evaluate_refuses_a_junction_point()
     {
         using var workspace = new TempWorkspace();
         string target = workspace.CreateFolder("cible");
@@ -126,8 +126,8 @@ public sealed class ProtectedPathsTests
 
         if (!TryCreateJunction(link, target))
         {
-            // La creation de jonction peut etre interdite par la strategie de la machine :
-            // on ne transforme pas cela en echec de test.
+            // Creating a junction may be forbidden by machine policy: do not turn that into a
+            // test failure.
             return;
         }
 

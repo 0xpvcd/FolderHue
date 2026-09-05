@@ -1,28 +1,28 @@
 namespace FolderHue.Core.Palette;
 
 /// <summary>
-/// Une teinte predefinie de la palette.
+/// One predefined hue from the palette.
 /// </summary>
 /// <remarks>
-/// La colorisation n'est pas une multiplication RVB : on remplace la teinte en espace HSL et on
-/// module la saturation, en conservant la luminance et le canal alpha du gabarit (CLAUDE.md §4.3).
-/// Les valeurs ci-dessous decrivent donc une transformation, pas une couleur absolue.
+/// Coloring is not an RGB multiply: the hue is replaced in HSL space and the saturation is
+/// modulated, while the template's lightness and alpha channel are preserved (CLAUDE.md 4.3).
+/// The values below therefore describe a transformation, not an absolute color.
 /// </remarks>
 /// <param name="Id">
-/// Identifiant stable, en minuscules, sans espace. Il sert de cle dans le journal
-/// <c>applied.json</c>, dans le nom du fichier <c>.ico</c> genere et dans les verbes du menu
-/// contextuel : il ne doit jamais changer une fois publie.
+/// Stable identifier, lowercase, no spaces. It is the key in the <c>applied.json</c> journal, in
+/// the name of the generated <c>.ico</c> file and in the context menu verbs: once published it
+/// must never change.
 /// </param>
-/// <param name="ResourceKey">Cle de <c>Strings.resx</c> pour le libelle affiche a l'utilisateur.</param>
-/// <param name="Hue">Teinte cible, en degres, dans l'intervalle [0, 360[.</param>
+/// <param name="ResourceKey">Key in <c>Strings.resx</c> for the label shown to the user.</param>
+/// <param name="Hue">Target hue in degrees, within [0, 360[.</param>
 /// <param name="SaturationScale">
-/// Facteur applique a la saturation d'origine de chaque pixel. 0 produit un resultat gris.
+/// Factor applied to each pixel's original saturation. Zero produces a grey result.
 /// </param>
 /// <param name="SaturationFloor">
-/// Saturation minimale imposee aux pixels quasi neutres, ponderee par leur position dans les
-/// tons moyens. Sans ce plancher, un gabarit gris resterait gris apres changement de teinte.
+/// Minimum saturation forced onto near-neutral pixels, weighted by how close they are to the
+/// midtones. Without that floor, a grey template would stay grey after a hue change.
 /// </param>
-/// <param name="LightnessDelta">Decalage de luminance applique apres la teinte, dans [-1, 1].</param>
+/// <param name="LightnessDelta">Lightness offset applied after the hue change, within [-1, 1].</param>
 public sealed record FolderColor(
     string Id,
     string ResourceKey,
@@ -32,21 +32,20 @@ public sealed record FolderColor(
     float LightnessDelta)
 {
     /// <summary>
-    /// Teinte sentinelle designant l'absence de transformation.
+    /// Sentinel hue meaning "no transformation at all".
     /// </summary>
     /// <remarks>
-    /// Une teinte valide vit dans [0, 360[ ; une valeur negative n'en est donc pas une. Elle sert
-    /// a exprimer « garde le gabarit tel quel », ce dont on a besoin pour poser un embleme sur un
-    /// dossier que l'utilisateur n'a jamais colorise.
+    /// A valid hue lives in [0, 360[, so a negative value cannot be one. It expresses "leave the
+    /// template alone", which is what putting an emblem on a folder the user never colored needs.
     /// </remarks>
     public const float NoHue = -1f;
 
     /// <summary>
-    /// Indique que cette entree laisse le gabarit intact.
+    /// Indicates that this entry leaves the template untouched.
     /// </summary>
     /// <remarks>
-    /// A ne pas confondre avec <c>graphite</c>, qui desature reellement l'icone : une entree
-    /// neutre ne touche a rien du tout.
+    /// Not to be confused with <c>graphite</c>, which genuinely desaturates the icon: a neutral
+    /// entry changes nothing whatsoever.
     /// </remarks>
     public bool IsNeutral => Hue < 0f;
 }

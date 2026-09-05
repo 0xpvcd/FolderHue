@@ -5,7 +5,7 @@ using Xunit;
 namespace FolderHue.Core.Tests;
 
 /// <summary>
-/// Verifie le journal <c>applied.json</c>, qui conditionne une reinitialisation propre.
+/// Checks the <c>applied.json</c> journal, on which a clean reset depends.
 /// </summary>
 public sealed class AppliedJournalTests
 {
@@ -21,11 +21,11 @@ public sealed class AppliedJournalTests
     };
 
     [Fact]
-    public void UpsertPuisFind_FaitLAllerRetour()
+    public void Upsert_then_Find_round_trips()
     {
         using var workspace = new TempWorkspace();
         var journal = new AppliedJournal(workspace.AppPaths.JournalFile);
-        string folder = workspace.CreateFolder("dossier");
+        string folder = workspace.CreateFolder("folder");
 
         Assert.True(journal.Upsert(Entry(folder, "emerald")));
 
@@ -36,11 +36,11 @@ public sealed class AppliedJournalTests
     }
 
     [Fact]
-    public void Upsert_RemplaceAuLieuDeDupliquer()
+    public void Upsert_replaces_rather_than_duplicates()
     {
         using var workspace = new TempWorkspace();
         var journal = new AppliedJournal(workspace.AppPaths.JournalFile);
-        string folder = workspace.CreateFolder("dossier");
+        string folder = workspace.CreateFolder("folder");
 
         journal.Upsert(Entry(folder, "red"));
         journal.Upsert(Entry(folder, "blue"));
@@ -50,11 +50,11 @@ public sealed class AppliedJournalTests
     }
 
     [Fact]
-    public void Find_IgnoreLaCasseEtLaBarreFinale()
+    public void Find_ignores_case_and_a_trailing_separator()
     {
         using var workspace = new TempWorkspace();
         var journal = new AppliedJournal(workspace.AppPaths.JournalFile);
-        string folder = workspace.CreateFolder("Dossier");
+        string folder = workspace.CreateFolder("Folder");
 
         journal.Upsert(Entry(folder));
 
@@ -63,11 +63,11 @@ public sealed class AppliedJournalTests
     }
 
     [Fact]
-    public void Remove_RetireLEntree()
+    public void Remove_takes_the_entry_out()
     {
         using var workspace = new TempWorkspace();
         var journal = new AppliedJournal(workspace.AppPaths.JournalFile);
-        string folder = workspace.CreateFolder("dossier");
+        string folder = workspace.CreateFolder("folder");
 
         journal.Upsert(Entry(folder));
         Assert.True(journal.Remove(folder));
@@ -77,16 +77,16 @@ public sealed class AppliedJournalTests
     }
 
     [Fact]
-    public void ReadAll_RetourneUneListeVideQuandLeFichierEstAbsent()
+    public void ReadAll_returns_an_empty_list_when_the_file_is_missing()
     {
         using var workspace = new TempWorkspace();
-        var journal = new AppliedJournal(Path.Combine(workspace.AppPaths.Root, "absent.json"));
+        var journal = new AppliedJournal(Path.Combine(workspace.AppPaths.Root, "missing.json"));
 
         Assert.Empty(journal.ReadAll());
     }
 
     [Fact]
-    public void ReadAll_TraiteUnFichierCorrompuCommeUnJournalVide()
+    public void ReadAll_treats_a_corrupt_file_as_an_empty_journal()
     {
         using var workspace = new TempWorkspace();
         string path = workspace.AppPaths.JournalFile;
@@ -94,33 +94,33 @@ public sealed class AppliedJournalTests
 
         var journal = new AppliedJournal(path);
 
-        // Perdre la trace est genant ; faire tomber explorer.exe le serait bien plus.
+        // Losing the record is annoying; bringing explorer.exe down would be far worse.
         Assert.Empty(journal.ReadAll());
     }
 
     [Fact]
-    public void Upsert_ReecritParDessusUnFichierCorrompu()
+    public void Upsert_overwrites_a_corrupt_file()
     {
         using var workspace = new TempWorkspace();
         string path = workspace.AppPaths.JournalFile;
         File.WriteAllText(path, "]]] corrompu");
 
         var journal = new AppliedJournal(path);
-        string folder = workspace.CreateFolder("dossier");
+        string folder = workspace.CreateFolder("folder");
 
         Assert.True(journal.Upsert(Entry(folder)));
         Assert.Single(journal.ReadAll());
     }
 
     [Fact]
-    public void Upsert_ResisteAUneEcritureConcurrente()
+    public void Upsert_survives_concurrent_writes()
     {
         using var workspace = new TempWorkspace();
         string path = workspace.AppPaths.JournalFile;
 
-        // Un Invoke traite N dossiers : plusieurs ecrivains simultanes sont le cas nominal.
+        // One Invoke handles N folders: several simultaneous writers are the normal case.
         string[] folders = Enumerable.Range(0, 24)
-            .Select(i => workspace.CreateFolder("dossier-" + i))
+            .Select(i => workspace.CreateFolder("folder-" + i))
             .ToArray();
 
         Parallel.ForEach(folders, folder =>
@@ -133,11 +133,11 @@ public sealed class AppliedJournalTests
     }
 
     [Fact]
-    public void Mutate_NEcritPasQuandLaTransformationRetourneFaux()
+    public void Mutate_writes_nothing_when_the_transformation_returns_false()
     {
         using var workspace = new TempWorkspace();
         var journal = new AppliedJournal(workspace.AppPaths.JournalFile);
-        string folder = workspace.CreateFolder("dossier");
+        string folder = workspace.CreateFolder("folder");
 
         journal.Upsert(Entry(folder));
 
@@ -150,7 +150,7 @@ public sealed class AppliedJournalTests
         Assert.Single(journal.ReadAll());
     }
     [Fact]
-    public void PruneMissing_RetireLaTraceDUnDossierSupprime()
+    public void PruneMissing_removes_the_record_of_a_deleted_folder()
     {
         using var workspace = new TempWorkspace();
         var journal = new AppliedJournal(workspace.AppPaths.JournalFile);
@@ -168,11 +168,11 @@ public sealed class AppliedJournalTests
     }
 
     [Fact]
-    public void PruneMissing_NEcritRienQuandTousLesDossiersSontLa()
+    public void PruneMissing_writes_nothing_when_every_folder_is_present()
     {
         using var workspace = new TempWorkspace();
         var journal = new AppliedJournal(workspace.AppPaths.JournalFile);
-        string folder = workspace.CreateFolder("dossier");
+        string folder = workspace.CreateFolder("folder");
 
         journal.Upsert(Entry(folder));
 
@@ -181,21 +181,21 @@ public sealed class AppliedJournalTests
     }
 
     [Fact]
-    public void PruneMissing_ConserveLaTraceDUnVolumeInjoignable()
+    public void PruneMissing_keeps_the_record_of_an_unreachable_volume()
     {
-        // Un disque amovible debranche ou un partage hors ligne rend Directory.Exists faux sur un
-        // dossier bien vivant. Purger son entree perdrait la trace de l'attribut +r, et
-        // interdirait toute reinitialisation propre au retour du volume (CLAUDE.md §6.3).
+        // An unplugged removable disk or an offline share makes Directory.Exists false for a
+        // perfectly live folder. Purging its entry would lose the record of the +r attribute and
+        // make a clean reset impossible once the volume returns (CLAUDE.md 6.3).
         string? absent = FirstUnusedDriveLetter();
         if (absent is null)
         {
-            // Machine dont toutes les lettres sont prises : le cas n'est pas simulable ici.
+            // A machine with every drive letter taken: the case cannot be simulated here.
             return;
         }
 
         using var workspace = new TempWorkspace();
         var journal = new AppliedJournal(workspace.AppPaths.JournalFile);
-        string offline = absent + @"\dossier\colorise";
+        string offline = absent + @"older\colored";
 
         journal.Upsert(Entry(offline));
 
@@ -203,7 +203,7 @@ public sealed class AppliedJournalTests
         Assert.NotNull(journal.Find(offline));
     }
 
-    /// <summary>Retourne une racine de lecteur absente de la machine, ou null s'il n'y en a pas.</summary>
+    /// <summary>Returns a drive root absent from the machine, or null when there is none.</summary>
     private static string? FirstUnusedDriveLetter()
     {
         for (char letter = 'Z'; letter >= 'D'; letter--)

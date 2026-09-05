@@ -3,11 +3,11 @@ using System.Buffers.Binary;
 namespace FolderHue.Core.Icons;
 
 /// <summary>
-/// Ecritures petit-boutistes utilisees par les formats ICO et DIB.
+/// Little-endian writes used by the ICO and DIB formats.
 /// </summary>
 /// <remarks>
-/// Ces deux formats sont petit-boutistes par specification, quelle que soit l'architecture : on ne
-/// peut donc pas se reposer sur <see cref="BitConverter"/>.
+/// Both formats are little-endian by specification, whatever the architecture, so
+/// <see cref="BitConverter"/> cannot be relied upon.
 /// </remarks>
 internal static class BinaryLittleEndian
 {

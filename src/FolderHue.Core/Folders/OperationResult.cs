@@ -1,28 +1,28 @@
 namespace FolderHue.Core.Folders;
 
 /// <summary>
-/// Issue d'une operation sur un dossier.
+/// Outcome of an operation on a folder.
 /// </summary>
 /// <remarks>
-/// Les operations de <see cref="FolderCustomizer"/> ne levent pas : elles sont appelees depuis
-/// <c>explorer.exe</c>, ou une exception non geree ferait tomber l'Explorateur (CLAUDE.md §6.5).
-/// L'echec est donc une valeur de retour, assortie d'une cle de ressource affichable.
+/// <see cref="FolderCustomizer"/> operations never throw: they are called from
+/// <c>explorer.exe</c>, where an unhandled exception would bring Explorer down (CLAUDE.md 6.5).
+/// Failure is therefore a return value, carrying a displayable resource key.
 /// </remarks>
-/// <param name="Success"><see langword="true"/> si l'operation a abouti.</param>
+/// <param name="Success"><see langword="true"/> when the operation succeeded.</param>
 /// <param name="ReasonKey">
-/// Cle de <c>Strings.resx</c> decrivant l'echec, ou <see langword="null"/> en cas de succes.
+/// Key in <c>Strings.resx</c> describing the failure, or <see langword="null"/> on success.
 /// </param>
 /// <param name="Detail">
-/// Complement technique destine au journal, jamais affiche tel quel a l'utilisateur.
+/// Technical detail meant for the log, never shown to the user as-is.
 /// </param>
 public readonly record struct OperationResult(bool Success, string? ReasonKey, string? Detail = null)
 {
-    /// <summary>Une operation reussie.</summary>
+    /// <summary>A successful operation.</summary>
     public static OperationResult Ok { get; } = new(true, null);
 
-    /// <summary>Construit un echec.</summary>
-    /// <param name="reasonKey">Cle de ressource decrivant la cause.</param>
-    /// <param name="detail">Complement technique pour le journal.</param>
-    /// <returns>Le resultat correspondant.</returns>
+    /// <summary>Builds a failure.</summary>
+    /// <param name="reasonKey">Resource key describing the cause.</param>
+    /// <param name="detail">Technical detail for the log.</param>
+    /// <returns>The matching result.</returns>
     public static OperationResult Failed(string reasonKey, string? detail = null) => new(false, reasonKey, detail);
 }

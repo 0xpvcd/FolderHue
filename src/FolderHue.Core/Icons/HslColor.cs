@@ -1,22 +1,22 @@
 namespace FolderHue.Core.Icons;
 
 /// <summary>
-/// Une couleur en espace Teinte / Saturation / Luminance.
+/// A color in Hue / Saturation / Lightness space.
 /// </summary>
 /// <remarks>
-/// C'est l'espace de travail de la colorisation : il permet de remplacer la teinte d'un pixel sans
-/// toucher a sa luminance, donc en conservant l'ombrage et le relief du gabarit (CLAUDE.md §4.3).
+/// This is the working space for coloring: it lets a pixel's hue be replaced without touching its
+/// lightness, which is what preserves the template's shading and relief (CLAUDE.md 4.3).
 /// </remarks>
-/// <param name="H">Teinte en degres, dans [0, 360[.</param>
-/// <param name="S">Saturation, dans [0, 1].</param>
-/// <param name="L">Luminance, dans [0, 1].</param>
+/// <param name="H">Hue in degrees, within [0, 360[.</param>
+/// <param name="S">Saturation, within [0, 1].</param>
+/// <param name="L">Lightness, within [0, 1].</param>
 public readonly record struct HslColor(float H, float S, float L)
 {
-    /// <summary>Convertit une couleur RVB 8 bits par canal en HSL.</summary>
-    /// <param name="r">Composante rouge.</param>
-    /// <param name="g">Composante verte.</param>
-    /// <param name="b">Composante bleue.</param>
-    /// <returns>La couleur equivalente en HSL.</returns>
+    /// <summary>Converts an 8-bit-per-channel RGB color to HSL.</summary>
+    /// <param name="r">Red component.</param>
+    /// <param name="g">Green component.</param>
+    /// <param name="b">Blue component.</param>
+    /// <returns>The equivalent color in HSL.</returns>
     public static HslColor FromRgb(byte r, byte g, byte b)
     {
         float rf = r / 255f;
@@ -29,7 +29,7 @@ public readonly record struct HslColor(float H, float S, float L)
 
         if (max - min < float.Epsilon)
         {
-            // Pixel neutre : la teinte n'a pas de sens, on la fixe a 0.
+            // Neutral pixel: hue is meaningless here, so it is pinned to 0.
             return new HslColor(0f, 0f, l);
         }
 
@@ -53,8 +53,8 @@ public readonly record struct HslColor(float H, float S, float L)
         return new HslColor(h * 60f, s, l);
     }
 
-    /// <summary>Convertit cette couleur HSL en RVB 8 bits par canal.</summary>
-    /// <returns>Les trois composantes, arrondies au plus proche.</returns>
+    /// <summary>Converts this HSL color to 8-bit-per-channel RGB.</summary>
+    /// <returns>The three components, rounded to nearest.</returns>
     public (byte R, byte G, byte B) ToRgb()
     {
         float s = Math.Clamp(S, 0f, 1f);
@@ -75,9 +75,9 @@ public readonly record struct HslColor(float H, float S, float L)
                 ToByte(HueToChannel(p, q, h - (1f / 3f))));
     }
 
-    /// <summary>Ramene une teinte quelconque dans l'intervalle [0, 360[.</summary>
-    /// <param name="hue">Teinte en degres, eventuellement negative ou superieure a 360.</param>
-    /// <returns>La teinte equivalente dans [0, 360[.</returns>
+    /// <summary>Brings any hue back into [0, 360[.</summary>
+    /// <param name="hue">Hue in degrees, possibly negative or above 360.</param>
+    /// <returns>The equivalent hue within [0, 360[.</returns>
     public static float Normalize(float hue)
     {
         float h = hue % 360f;

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <root>
   <!--
-    English fallback (en). Keys must stay in sync with Strings.resx (fr-FR, neutral).
-    Every user-facing string goes through here, including context menu titles:
-    no hard-coded literal in the UI nor in GetTitle() (CLAUDE.md §7).
+    Langue neutre du projet : fr-FR (voir NeutralLanguage dans Directory.Build.props).
+    Toute chaine affichee a l'utilisateur passe par ici, y compris les titres du menu
+    contextuel : aucun litteral en dur dans l'UI ni dans GetTitle() (CLAUDE.md §7).
   -->
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -68,42 +68,44 @@
     <value>FolderHue</value>
   </data>
 
+  <!-- Menu contextuel -->
   <data name="Menu_Root" xml:space="preserve">
     <value>FolderHue</value>
   </data>
   <data name="Menu_Emblem" xml:space="preserve">
-    <value>Emblem</value>
+    <value>Emblème</value>
   </data>
   <data name="Menu_Reset" xml:space="preserve">
-    <value>Reset color</value>
+    <value>Réinitialiser la couleur</value>
   </data>
 
+  <!-- Palette -->
   <data name="Color_Neutral" xml:space="preserve">
-    <value>Original color</value>
+    <value>Couleur d’origine</value>
   </data>
   <data name="Color_Red" xml:space="preserve">
-    <value>Red</value>
+    <value>Rouge</value>
   </data>
   <data name="Color_Orange" xml:space="preserve">
     <value>Orange</value>
   </data>
   <data name="Color_Amber" xml:space="preserve">
-    <value>Amber</value>
+    <value>Ambre</value>
   </data>
   <data name="Color_Yellow" xml:space="preserve">
-    <value>Yellow</value>
+    <value>Jaune</value>
   </data>
   <data name="Color_Green" xml:space="preserve">
-    <value>Green</value>
+    <value>Vert</value>
   </data>
   <data name="Color_Emerald" xml:space="preserve">
-    <value>Emerald</value>
+    <value>Émeraude</value>
   </data>
   <data name="Color_Cyan" xml:space="preserve">
     <value>Cyan</value>
   </data>
   <data name="Color_Blue" xml:space="preserve">
-    <value>Blue</value>
+    <value>Bleu</value>
   </data>
   <data name="Color_Indigo" xml:space="preserve">
     <value>Indigo</value>
@@ -112,121 +114,125 @@
     <value>Violet</value>
   </data>
   <data name="Color_Pink" xml:space="preserve">
-    <value>Pink</value>
+    <value>Rose</value>
   </data>
   <data name="Color_Graphite" xml:space="preserve">
     <value>Graphite</value>
   </data>
 
+  <!-- Emblèmes -->
   <data name="Emblem_None" xml:space="preserve">
-    <value>No emblem</value>
+    <value>Aucun emblème</value>
   </data>
   <data name="Emblem_Important" xml:space="preserve">
     <value>Important</value>
   </data>
   <data name="Emblem_Progress" xml:space="preserve">
-    <value>In progress</value>
+    <value>En cours</value>
   </data>
   <data name="Emblem_Done" xml:space="preserve">
-    <value>Done</value>
+    <value>Terminé</value>
   </data>
   <data name="Emblem_Locked" xml:space="preserve">
-    <value>Locked</value>
+    <value>Verrouillé</value>
   </data>
   <data name="Emblem_Favorite" xml:space="preserve">
-    <value>Favorite</value>
+    <value>Favori</value>
   </data>
 
+  <!-- Refus de la liste d'exclusion -->
   <data name="Protection_InvalidPath" xml:space="preserve">
-    <value>This path is not valid.</value>
+    <value>Ce chemin n'est pas valide.</value>
   </data>
   <data name="Protection_NotFound" xml:space="preserve">
-    <value>This folder cannot be found.</value>
+    <value>Ce dossier est introuvable.</value>
   </data>
   <data name="Protection_VolumeRoot" xml:space="preserve">
-    <value>The root of a drive or a network share cannot be colorized.</value>
+    <value>La racine d'un disque ou d'un partage réseau ne peut pas être colorisée.</value>
   </data>
   <data name="Protection_SystemTree" xml:space="preserve">
-    <value>This folder belongs to the system and cannot be modified.</value>
+    <value>Ce dossier appartient au système et ne peut pas être modifié.</value>
   </data>
   <data name="Protection_KnownFolder" xml:space="preserve">
-    <value>This is a Windows known folder (Documents, Pictures, Desktop and so on) and cannot be colorized.</value>
+    <value>Ce dossier est un dossier Windows de référence (Documents, Images, Bureau…) et ne peut pas être colorisé.</value>
   </data>
   <data name="Protection_ReparsePoint" xml:space="preserve">
-    <value>This folder is a link or a junction: colorizing it would modify its target.</value>
+    <value>Ce dossier est un lien ou une jonction : le coloriser modifierait sa cible.</value>
   </data>
   <data name="Protection_ApplicationData" xml:space="preserve">
-    <value>This folder belongs to FolderHue.</value>
+    <value>Ce dossier appartient à FolderHue.</value>
   </data>
 
+  <!-- Erreurs -->
   <data name="Error_IconMissing" xml:space="preserve">
-    <value>The requested icon has not been generated yet. Open FolderHue to rebuild the palette.</value>
+    <value>L'icône demandée n'a pas encore été générée. Ouvrez FolderHue pour régénérer la palette.</value>
   </data>
   <data name="Error_UnknownColor" xml:space="preserve">
-    <value>Unknown color.</value>
+    <value>Cette couleur est inconnue.</value>
   </data>
   <data name="Error_UnknownEmblem" xml:space="preserve">
-    <value>Unknown emblem.</value>
+    <value>Cet emblème est inconnu.</value>
   </data>
   <data name="Error_AccessDenied" xml:space="preserve">
-    <value>Missing permissions to modify this folder.</value>
+    <value>Les droits nécessaires pour modifier ce dossier sont manquants.</value>
   </data>
   <data name="Error_Io" xml:space="preserve">
-    <value>The folder could not be modified.</value>
+    <value>Le dossier n'a pas pu être modifié.</value>
   </data>
 
+  <!-- Interface de réglages -->
   <data name="App_Title" xml:space="preserve">
-    <value>FolderHue — Settings</value>
+    <value>FolderHue — Réglages</value>
   </data>
   <data name="App_PaletteTab" xml:space="preserve">
     <value>Palette</value>
   </data>
   <data name="App_FoldersTab" xml:space="preserve">
-    <value>Colorized folders</value>
+    <value>Dossiers colorisés</value>
   </data>
   <data name="App_AboutTab" xml:space="preserve">
-    <value>About</value>
+    <value>À propos</value>
   </data>
   <data name="App_RegenerateIcons" xml:space="preserve">
-    <value>Rebuild icons</value>
+    <value>Régénérer les icônes</value>
   </data>
   <data name="App_OpenIconsFolder" xml:space="preserve">
-    <value>Open the icons folder</value>
+    <value>Ouvrir le dossier des icônes</value>
   </data>
   <data name="App_ResetSelected" xml:space="preserve">
-    <value>Reset selected folder</value>
+    <value>Réinitialiser le dossier sélectionné</value>
   </data>
   <data name="App_ResetAll" xml:space="preserve">
-    <value>Reset everything</value>
+    <value>Tout réinitialiser</value>
   </data>
   <data name="App_ResetAllConfirm" xml:space="preserve">
-    <value>Reset every colorized folder? No file will be deleted: only the custom icons are removed.</value>
+    <value>Réinitialiser tous les dossiers colorisés ? Aucun fichier ne sera supprimé : seules les icônes personnalisées seront retirées.</value>
   </data>
   <data name="App_ColumnFolder" xml:space="preserve">
-    <value>Folder</value>
+    <value>Dossier</value>
   </data>
   <data name="App_ColumnColor" xml:space="preserve">
-    <value>Color</value>
+    <value>Couleur</value>
   </data>
   <data name="App_ColumnEmblem" xml:space="preserve">
-    <value>Emblem</value>
+    <value>Emblème</value>
   </data>
   <data name="App_ColumnDate" xml:space="preserve">
-    <value>Applied on</value>
+    <value>Appliqué le</value>
   </data>
   <data name="App_GeneratingIcons" xml:space="preserve">
-    <value>Generating icons…</value>
+    <value>Génération des icônes…</value>
   </data>
   <data name="App_IconsReady" xml:space="preserve">
-    <value>{0} icons ready.</value>
+    <value>{0} icônes prêtes.</value>
   </data>
   <data name="App_SkippedFolders" xml:space="preserve">
-    <value>{0} folder(s) could not be colorized: they are system folders, links or drive roots, which FolderHue never modifies.</value>
+    <value>{0} dossier(s) n'ont pas pu être colorisés : ce sont des dossiers système, des liens ou des racines de disque, que FolderHue ne modifie jamais.</value>
   </data>
   <data name="App_PortabilityWarning" xml:space="preserve">
-    <value>The icon is stored in your profile and referenced by its absolute path. If the folder is moved to another machine, a network share or a USB drive, it will fall back to its original icon.</value>
+    <value>L'icône est enregistrée dans votre profil et référencée par son chemin absolu. Si le dossier est déplacé sur une autre machine, un partage réseau ou une clé USB, il retrouvera son icône d'origine.</value>
   </data>
   <data name="App_VersionControlNote" xml:space="preserve">
-    <value>Colorizing adds a hidden desktop.ini file inside the folder. This is expected: Git or OneDrive may report it. Add "desktop.ini" to your .gitignore if needed.</value>
+    <value>La colorisation ajoute un fichier desktop.ini masqué dans le dossier. C'est normal : Git ou OneDrive peuvent le signaler. Ajoutez « desktop.ini » à votre .gitignore si nécessaire.</value>
   </data>
 </root>

@@ -4,48 +4,48 @@ using System.Text;
 namespace FolderHue.Core.Folders;
 
 /// <summary>
-/// Lecture et ecriture d'un <c>desktop.ini</c> sur disque, encodage et attributs compris.
+/// Reads and writes a <c>desktop.ini</c> on disk, encoding and attributes included.
 /// </summary>
 /// <remarks>
-/// L'encodage d'origine est detecte puis <b>conserve</b> a la reecriture : un fichier ANSI ecrit
-/// par un autre outil ne doit pas etre converti dans notre dos, sous peine de rendre illisibles
-/// des valeurs comme <c>LocalizedResourceName</c>.
+/// The original encoding is detected and then <b>preserved</b> on rewrite: an ANSI file written by
+/// another tool must not be converted behind the user's back, or values such as
+/// <c>LocalizedResourceName</c> would become unreadable.
 /// </remarks>
 [SupportedOSPlatform("windows")]
 public static class DesktopIniFile
 {
-    /// <summary>Nom du fichier de personnalisation lu par l'Explorateur.</summary>
+    /// <summary>Name of the customisation file Explorer reads.</summary>
     public const string FileName = "desktop.ini";
 
-    /// <summary>Nom de la sauvegarde que nous creons avant toute reecriture (CLAUDE.md §6.1).</summary>
+    /// <summary>Name of the backup we create before any rewrite (CLAUDE.md 6.1).</summary>
     public const string BackupFileName = "desktop.ini.folderhue.bak";
 
     /// <summary>
-    /// Encodage utilise pour un fichier que nous creons de toutes pieces.
+    /// Encoding used for a file we create from scratch.
     /// </summary>
     /// <remarks>
-    /// UTF-16 petit-boutiste avec BOM : c'est le format Unicode que les API <c>PrivateProfile</c>
-    /// de Win32 reconnaissent de facon fiable.
+    /// Little-endian UTF-16 with a BOM: the Unicode form Win32's <c>PrivateProfile</c> APIs
+    /// recognise reliably.
     /// </remarks>
     public static Encoding DefaultEncoding { get; } = new UnicodeEncoding(bigEndian: false, byteOrderMark: true);
 
-    /// <summary>Chemin du <c>desktop.ini</c> d'un dossier.</summary>
-    /// <param name="folderPath">Chemin du dossier.</param>
-    /// <returns>Le chemin complet du fichier, qu'il existe ou non.</returns>
+    /// <summary>Path of a folder's <c>desktop.ini</c>.</summary>
+    /// <param name="folderPath">Path of the folder.</param>
+    /// <returns>The full path of the file, whether it exists or not.</returns>
     public static string PathFor(string folderPath) => Path.Combine(folderPath, FileName);
 
-    /// <summary>Chemin de la sauvegarde du <c>desktop.ini</c> d'un dossier.</summary>
-    /// <param name="folderPath">Chemin du dossier.</param>
-    /// <returns>Le chemin complet de la sauvegarde, qu'elle existe ou non.</returns>
+    /// <summary>Path of the backup of a folder's <c>desktop.ini</c>.</summary>
+    /// <param name="folderPath">Path of the folder.</param>
+    /// <returns>The full path of the backup, whether it exists or not.</returns>
     public static string BackupPathFor(string folderPath) => Path.Combine(folderPath, BackupFileName);
 
     /// <summary>
-    /// Lit un <c>desktop.ini</c>, ou retourne un document vide si le fichier n'existe pas.
+    /// Reads a <c>desktop.ini</c>, or returns an empty document when the file does not exist.
     /// </summary>
-    /// <param name="filePath">Chemin du fichier.</param>
-    /// <returns>Le contenu analyse et l'encodage detecte.</returns>
-    /// <exception cref="ArgumentException"><paramref name="filePath"/> est vide.</exception>
-    /// <exception cref="IOException">Le fichier existe mais n'a pas pu etre lu.</exception>
+    /// <param name="filePath">Path of the file.</param>
+    /// <returns>The parsed content and the detected encoding.</returns>
+    /// <exception cref="ArgumentException"><paramref name="filePath"/> is empty.</exception>
+    /// <exception cref="IOException">The file exists but could not be read.</exception>
     public static DesktopIniDocument Read(string filePath)
     {
         ArgumentException.ThrowIfNullOrEmpty(filePath);
@@ -63,19 +63,19 @@ public static class DesktopIniFile
     }
 
     /// <summary>
-    /// Ecrit un <c>desktop.ini</c> et lui repose les attributs Hidden + System.
+    /// Writes a <c>desktop.ini</c> and puts its Hidden + System attributes back.
     /// </summary>
-    /// <param name="filePath">Chemin du fichier.</param>
-    /// <param name="document">Le contenu et l'encodage a utiliser.</param>
-    /// <exception cref="ArgumentException"><paramref name="filePath"/> est vide.</exception>
-    /// <exception cref="ArgumentNullException"><paramref name="document"/> vaut <see langword="null"/>.</exception>
-    /// <exception cref="IOException">L'ecriture a echoue.</exception>
+    /// <param name="filePath">Path of the file.</param>
+    /// <param name="document">The content and the encoding to use.</param>
+    /// <exception cref="ArgumentException"><paramref name="filePath"/> is empty.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="document"/> is <see langword="null"/>.</exception>
+    /// <exception cref="IOException">The write failed.</exception>
     public static void Write(string filePath, DesktopIniDocument document)
     {
         ArgumentException.ThrowIfNullOrEmpty(filePath);
         ArgumentNullException.ThrowIfNull(document);
 
-        // Un fichier cache ne peut pas etre ouvert en ecriture : on degage les attributs d'abord.
+        // A hidden file cannot be opened for writing: clear the attributes first.
         FolderAttributes.ClearFileFlags(filePath);
 
         File.WriteAllText(filePath, document.Content.ToText(), document.Encoding);
@@ -83,10 +83,10 @@ public static class DesktopIniFile
         FolderAttributes.MakeHiddenSystem(filePath);
     }
 
-    /// <summary>Supprime un <c>desktop.ini</c>, attributs compris.</summary>
-    /// <param name="filePath">Chemin du fichier.</param>
-    /// <exception cref="ArgumentException"><paramref name="filePath"/> est vide.</exception>
-    /// <exception cref="IOException">La suppression a echoue.</exception>
+    /// <summary>Deletes a <c>desktop.ini</c>, attributes included.</summary>
+    /// <param name="filePath">Path of the file.</param>
+    /// <exception cref="ArgumentException"><paramref name="filePath"/> is empty.</exception>
+    /// <exception cref="IOException">The deletion failed.</exception>
     public static void Delete(string filePath)
     {
         ArgumentException.ThrowIfNullOrEmpty(filePath);
@@ -101,14 +101,14 @@ public static class DesktopIniFile
     }
 
     /// <summary>
-    /// Detecte l'encodage d'un fichier a partir de sa marque d'ordre des octets.
+    /// Detects a file's encoding from its byte order mark.
     /// </summary>
-    /// <param name="bytes">Le contenu brut du fichier.</param>
-    /// <param name="bomLength">Recoit la longueur de la BOM, ou 0 s'il n'y en a pas.</param>
-    /// <returns>L'encodage detecte.</returns>
+    /// <param name="bytes">The raw file content.</param>
+    /// <param name="bomLength">Receives the BOM length, or 0 when there is none.</param>
+    /// <returns>The detected encoding.</returns>
     /// <remarks>
-    /// Sans BOM, on tente l'UTF-8 strict ; s'il echoue, le fichier est de l'ANSI et on retombe sur
-    /// Latin-1, qui a l'avantage d'etre integre au runtime et de ne jamais perdre d'octet.
+    /// With no BOM, strict UTF-8 is attempted; when that fails the file is ANSI and we fall back to
+    /// Latin-1, which has the advantage of being built into the runtime and of never losing a byte.
     /// </remarks>
     public static Encoding DetectEncoding(ReadOnlySpan<byte> bytes, out int bomLength)
     {
@@ -145,8 +145,8 @@ public static class DesktopIniFile
 }
 
 /// <summary>
-/// Un <c>desktop.ini</c> lu sur disque : son contenu et l'encodage dans lequel il etait ecrit.
+/// A <c>desktop.ini</c> read from disk: its content and the encoding it was written in.
 /// </summary>
-/// <param name="Content">Le contenu analyse.</param>
-/// <param name="Encoding">L'encodage a reutiliser lors de la reecriture.</param>
+/// <param name="Content">The parsed content.</param>
+/// <param name="Encoding">The encoding to reuse when rewriting.</param>
 public sealed record DesktopIniDocument(DesktopIni Content, Encoding Encoding);

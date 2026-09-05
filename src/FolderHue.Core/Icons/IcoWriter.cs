@@ -1,15 +1,15 @@
 namespace FolderHue.Core.Icons;
 
 /// <summary>
-/// Ecrit un conteneur ICO multi-resolution.
+/// Writes a multi-resolution ICO container.
 /// </summary>
 /// <remarks>
-/// Aucune bibliotheque graphique n'est capable d'ecrire un ICO contenant a la fois des trames DIB
-/// et une trame 256 px encodee en PNG, ce que le shell exige pour les grandes vignettes
-/// (CLAUDE.md §4.3). Ce writer assemble donc le conteneur octet par octet.
+/// No graphics library can write an ICO holding both DIB frames and a PNG-encoded 256 px frame,
+/// which is what the shell requires for large thumbnails (CLAUDE.md 4.3). This writer therefore
+/// assembles the container byte by byte.
 /// <para>
-/// Structure : un <c>ICONDIR</c> de 6 octets, puis un <c>ICONDIRENTRY</c> de 16 octets par trame,
-/// puis les donnees des trames dans le meme ordre.
+/// Layout: a 6-byte <c>ICONDIR</c>, then one 16-byte <c>ICONDIRENTRY</c> per frame, then the frame
+/// data in the same order.
 /// </para>
 /// </remarks>
 public static class IcoWriter
@@ -17,11 +17,11 @@ public static class IcoWriter
     private const int IconDirSize = 6;
     private const int IconDirEntrySize = 16;
 
-    /// <summary>Ecrit les trames dans un flux, au format ICO.</summary>
-    /// <param name="destination">Flux ouvert en ecriture. Il n'est pas ferme par cette methode.</param>
-    /// <param name="frames">Les trames, dans l'ordre ou elles doivent apparaitre.</param>
-    /// <exception cref="ArgumentNullException">Un argument vaut <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentException">La liste est vide, ou une trame est invalide.</exception>
+    /// <summary>Writes the frames to a stream, in ICO format.</summary>
+    /// <param name="destination">A writable stream. This method does not close it.</param>
+    /// <param name="frames">The frames, in the order they should appear.</param>
+    /// <exception cref="ArgumentNullException">An argument is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">The list is empty, or a frame is invalid.</exception>
     public static void Write(Stream destination, IReadOnlyList<IcoFrame> frames)
     {
         ArgumentNullException.ThrowIfNull(destination);
@@ -29,12 +29,12 @@ public static class IcoWriter
 
         if (frames.Count == 0)
         {
-            throw new ArgumentException("Un fichier ICO doit contenir au moins une trame.", nameof(frames));
+            throw new ArgumentException("An ICO file must hold at least one frame.", nameof(frames));
         }
 
         if (frames.Count > ushort.MaxValue)
         {
-            throw new ArgumentException("Un fichier ICO ne peut pas contenir autant de trames.", nameof(frames));
+            throw new ArgumentException("An ICO file cannot hold that many frames.", nameof(frames));
         }
 
         foreach (IcoFrame frame in frames)
@@ -46,7 +46,7 @@ public static class IcoWriter
         Span<byte> span = header;
 
         BinaryLittleEndian.WriteInt16(span[..2], 0);                    // idReserved
-        BinaryLittleEndian.WriteInt16(span.Slice(2, 2), 1);             // idType : 1 = icone
+        BinaryLittleEndian.WriteInt16(span.Slice(2, 2), 1);             // idType: 1 = icon
         BinaryLittleEndian.WriteInt16(span.Slice(4, 2), (short)frames.Count);
 
         int offset = header.Length;
@@ -55,10 +55,10 @@ public static class IcoWriter
             IcoFrame frame = frames[i];
             Span<byte> entry = span.Slice(IconDirSize + (i * IconDirEntrySize), IconDirEntrySize);
 
-            // 256 px se code par un 0 : le champ ne fait qu'un octet.
+            // 256 px is encoded as a zero: the field is a single byte.
             entry[0] = ToDimensionByte(frame.Width);
             entry[1] = ToDimensionByte(frame.Height);
-            entry[2] = 0;                                               // bColorCount : 0 = vraies couleurs
+            entry[2] = 0;                                               // bColorCount: 0 = true color
             entry[3] = 0;                                               // bReserved
             BinaryLittleEndian.WriteInt16(entry.Slice(4, 2), 1);        // wPlanes
             BinaryLittleEndian.WriteInt16(entry.Slice(6, 2), 32);       // wBitCount
@@ -76,11 +76,11 @@ public static class IcoWriter
         }
     }
 
-    /// <summary>Ecrit les trames dans un fichier, au format ICO.</summary>
-    /// <param name="path">Chemin du fichier a creer ou remplacer.</param>
-    /// <param name="frames">Les trames, dans l'ordre ou elles doivent apparaitre.</param>
-    /// <exception cref="ArgumentNullException">Un argument vaut <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentException">La liste est vide, ou une trame est invalide.</exception>
+    /// <summary>Writes the frames to a file, in ICO format.</summary>
+    /// <param name="path">Path of the file to create or replace.</param>
+    /// <param name="frames">The frames, in the order they should appear.</param>
+    /// <exception cref="ArgumentNullException">An argument is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">The list is empty, or a frame is invalid.</exception>
     public static void WriteFile(string path, IReadOnlyList<IcoFrame> frames)
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
@@ -96,13 +96,13 @@ public static class IcoWriter
         if (frame.Width is < 1 or > IconSizes.MaxSize || frame.Height is < 1 or > IconSizes.MaxSize)
         {
             throw new ArgumentException(
-                $"Dimensions hors limites : {frame.Width}x{frame.Height}. Un ICO accepte 1 a {IconSizes.MaxSize} px.",
+                $"Dimensions out of range: {frame.Width}x{frame.Height}. An ICO accepts 1 to {IconSizes.MaxSize} px.",
                 nameof(frame));
         }
 
         if (frame.Data is null || frame.Data.Length == 0)
         {
-            throw new ArgumentException("Une trame ne peut pas etre vide.", nameof(frame));
+            throw new ArgumentException("A frame cannot be empty.", nameof(frame));
         }
     }
 

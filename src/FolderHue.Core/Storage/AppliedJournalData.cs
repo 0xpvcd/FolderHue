@@ -3,24 +3,24 @@ using System.Text.Json.Serialization;
 namespace FolderHue.Core.Storage;
 
 /// <summary>
-/// Contenu serialise de <c>applied.json</c>.
+/// Serialised contents of <c>applied.json</c>.
 /// </summary>
 public sealed class AppliedJournalData
 {
-    /// <summary>Version du schema, pour permettre une migration ulterieure.</summary>
+    /// <summary>Schema version, so that a later migration remains possible.</summary>
     public int Version { get; set; } = 1;
 
-    /// <summary>Les dossiers actuellement colorises.</summary>
+    /// <summary>The folders currently colored.</summary>
     public List<AppliedEntry> Entries { get; set; } = [];
 }
 
 /// <summary>
-/// Contexte de serialisation genere a la compilation.
+/// Serialisation context generated at compile time.
 /// </summary>
 /// <remarks>
-/// La serialisation par reflexion de <c>System.Text.Json</c> n'est pas compatible NativeAOT : le
-/// shell, qui lit ce journal depuis <c>explorer.exe</c>, exige un contexte source-genere
-/// (CLAUDE.md §2.1).
+/// The reflection-based serialisation of <c>System.Text.Json</c> is not NativeAOT-compatible, and
+/// the shell reads this journal from inside <c>explorer.exe</c>: a source-generated context is
+/// required (CLAUDE.md 2.1).
 /// </remarks>
 [JsonSourceGenerationOptions(WriteIndented = true)]
 [JsonSerializable(typeof(AppliedJournalData))]

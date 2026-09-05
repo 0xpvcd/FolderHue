@@ -3,48 +3,47 @@ using FolderHue.Core.Palette;
 namespace FolderHue.Core.Icons;
 
 /// <summary>
-/// Applique une teinte de la palette a un bitmap 32 bits, en espace HSL.
+/// Applies a palette hue to a 32-bit bitmap, in HSL space.
 /// </summary>
 /// <remarks>
-/// Code volontairement pur : aucune dependance graphique, donc compatible NativeAOT et testable
-/// sans Windows (CLAUDE.md §2.1). Le decodage et l'encodage des images sont a la charge de
-/// <c>FolderHue.App</c>.
+/// Deliberately pure code: no graphics dependency, therefore NativeAOT-compatible and testable
+/// without Windows (CLAUDE.md 2.1). Decoding and encoding images is <c>FolderHue.App</c>'s job.
 /// </remarks>
 public static class HslTint
 {
     /// <summary>
-    /// Teinte le tampon en place.
+    /// Tints the buffer in place.
     /// </summary>
     /// <param name="bgra">
-    /// Pixels au format BGRA 8 bits par canal, alpha <b>non premultiplie</b>. La longueur doit
-    /// etre un multiple de 4.
+    /// Pixels as 8-bit-per-channel BGRA, alpha <b>not premultiplied</b>. The length must be a
+    /// multiple of 4.
     /// </param>
-    /// <param name="color">La teinte a appliquer.</param>
+    /// <param name="color">The hue to apply.</param>
     /// <remarks>
-    /// Pour chaque pixel : l'alpha est conserve tel quel, la luminance est conservee (au decalage
-    /// <see cref="FolderColor.LightnessDelta"/> pres) et seule la teinte est remplacee. C'est ce
-    /// qui preserve l'ombrage et le relief du gabarit ; une simple multiplication RVB donnerait un
-    /// resultat plat (CLAUDE.md §4.3).
+    /// For each pixel: alpha is kept as-is, lightness is kept (give or take
+    /// <see cref="FolderColor.LightnessDelta"/>) and only the hue is replaced. That is what
+    /// preserves the template's shading and relief; a plain RGB multiply would give a flat result
+    /// (CLAUDE.md 4.3).
     /// <para>
-    /// Les pixels entierement transparents sont ignores : leurs composantes de couleur n'ont pas
-    /// de sens et les teinter ferait apparaitre un halo lors du redimensionnement.
+    /// Fully transparent pixels are skipped: their color components are meaningless, and tinting
+    /// them would make a halo appear when the image is resized.
     /// </para>
     /// </remarks>
-    /// <exception cref="ArgumentException">La longueur de <paramref name="bgra"/> n'est pas un multiple de 4.</exception>
-    /// <exception cref="ArgumentNullException"><paramref name="color"/> vaut <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">The length of <paramref name="bgra"/> is not a multiple of 4.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="color"/> is <see langword="null"/>.</exception>
     public static void Apply(Span<byte> bgra, FolderColor color)
     {
         ArgumentNullException.ThrowIfNull(color);
 
         if (bgra.Length % 4 != 0)
         {
-            throw new ArgumentException("Le tampon BGRA doit avoir une longueur multiple de 4.", nameof(bgra));
+            throw new ArgumentException("The BGRA buffer length must be a multiple of 4.", nameof(bgra));
         }
 
         if (color.IsNeutral)
         {
-            // « Aucune teinte » : le gabarit est rendu tel quel. C'est ce qui permet de poser un
-            // embleme sur un dossier sans lui imposer une couleur au passage.
+            // "No hue": the template is rendered untouched. That is what allows an emblem to be
+            // placed on a folder without forcing a color on it along the way.
             return;
         }
 
@@ -74,18 +73,18 @@ public static class HslTint
             bgra[i + 1] = g;
             bgra[i + 2] = r;
 
-            // bgra[i + 3] : alpha inchange, volontairement.
+            // bgra[i + 3]: alpha left untouched, on purpose.
         }
     }
 
     /// <summary>
-    /// Poids d'un pixel dans les tons moyens : 1 a mi-luminance, 0 au noir et au blanc purs.
+    /// How much a pixel counts as a midtone: 1 at mid-lightness, 0 at pure black and pure white.
     /// </summary>
-    /// <param name="lightness">Luminance du pixel, dans [0, 1].</param>
-    /// <returns>Le poids, dans [0, 1].</returns>
+    /// <param name="lightness">The pixel's lightness, within [0, 1].</param>
+    /// <returns>The weight, within [0, 1].</returns>
     /// <remarks>
-    /// Le plancher de saturation n'est applique qu'aux tons moyens. Sans cette ponderation, les
-    /// hautes lumieres du dossier viendraient se colorer et l'icone perdrait son relief.
+    /// The saturation floor applies to midtones only. Without this weighting the folder's
+    /// highlights would take the color too and the icon would lose its relief.
     /// </remarks>
     public static float MidtoneWeight(float lightness)
     {

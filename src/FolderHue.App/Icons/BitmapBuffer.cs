@@ -6,21 +6,21 @@ using System.Runtime.Versioning;
 namespace FolderHue.App.Icons;
 
 /// <summary>
-/// Conversions entre <see cref="Bitmap"/> GDI+ et tampons BGRA bruts.
+/// Conversions between GDI+ <see cref="Bitmap"/> objects and raw BGRA buffers.
 /// </summary>
 /// <remarks>
-/// C'est la frontiere entre le monde graphique, confine a <c>FolderHue.App</c>, et le code pur de
-/// <c>FolderHue.Core</c> qui teinte et encode (CLAUDE.md §2.1). Le format est toujours
-/// <see cref="PixelFormat.Format32bppArgb"/> : alpha <b>non premultiplie</b>, exactement la
-/// convention attendue par <c>HslTint</c> et <c>DibFrameBuilder</c>.
+/// This is the border between the graphics world, confined to <c>FolderHue.App</c>, and the pure
+/// code in <c>FolderHue.Core</c> that tints and encodes (CLAUDE.md 2.1). The format is always
+/// <see cref="PixelFormat.Format32bppArgb"/>: alpha <b>not premultiplied</b>, exactly the
+/// convention <c>HslTint</c> and <c>DibFrameBuilder</c> expect.
 /// </remarks>
 [SupportedOSPlatform("windows")]
 internal static class BitmapBuffer
 {
-    /// <summary>Construit un bitmap a partir d'un tampon BGRA carre.</summary>
-    /// <param name="bgra">Pixels BGRA non premultiplies, de longueur <c>size * size * 4</c>.</param>
-    /// <param name="size">Cote de l'image, en pixels.</param>
-    /// <returns>Un bitmap dont l'appelant devient proprietaire.</returns>
+    /// <summary>Builds a bitmap from a square BGRA buffer.</summary>
+    /// <param name="bgra">Non-premultiplied BGRA pixels, of length <c>size * size * 4</c>.</param>
+    /// <param name="size">Side of the image, in pixels.</param>
+    /// <returns>A bitmap the caller takes ownership of.</returns>
     internal static Bitmap FromBgra(byte[] bgra, int size)
     {
         ArgumentNullException.ThrowIfNull(bgra);
@@ -45,9 +45,9 @@ internal static class BitmapBuffer
         return bitmap;
     }
 
-    /// <summary>Extrait les pixels BGRA d'un bitmap.</summary>
-    /// <param name="bitmap">Le bitmap source.</param>
-    /// <returns>Un tampon BGRA non premultiplie, ligne par ligne, de haut en bas.</returns>
+    /// <summary>Extracts a bitmap's BGRA pixels.</summary>
+    /// <param name="bitmap">The source bitmap.</param>
+    /// <returns>A non-premultiplied BGRA buffer, row by row, top-down.</returns>
     internal static byte[] ToBgra(Bitmap bitmap)
     {
         ArgumentNullException.ThrowIfNull(bitmap);

@@ -3,25 +3,25 @@ using System.Runtime.Versioning;
 namespace FolderHue.Core.Folders;
 
 /// <summary>
-/// Pose et retire les attributs de fichier exiges par la personnalisation d'un dossier.
+/// Sets and clears the file attributes a folder customisation requires.
 /// </summary>
 /// <remarks>
-/// Trois conditions <b>cumulatives</b> sont necessaires pour que l'Explorateur honore un
-/// <c>desktop.ini</c> (CLAUDE.md §4.1) :
+/// Three <b>cumulative</b> conditions are needed before Explorer honours a <c>desktop.ini</c>
+/// (CLAUDE.md 4.1):
 /// <list type="number">
-///   <item><description>le fichier <c>desktop.ini</c> existe a la racine du dossier ;</description></item>
-///   <item><description>ce fichier porte les attributs Hidden + System ;</description></item>
-///   <item><description>le <b>dossier lui-meme</b> porte ReadOnly ou System.</description></item>
+///   <item><description>the <c>desktop.ini</c> file exists at the root of the folder;</description></item>
+///   <item><description>that file carries the Hidden + System attributes;</description></item>
+///   <item><description>the <b>folder itself</b> carries ReadOnly or System.</description></item>
 /// </list>
-/// L'oubli du troisieme point est l'erreur numero un sur ce type de projet : sans lui,
-/// <c>desktop.ini</c> est purement et simplement ignore.
+/// Forgetting the third one is mistake number one on this kind of project: without it,
+/// <c>desktop.ini</c> is ignored outright.
 /// </remarks>
 [SupportedOSPlatform("windows")]
 public static class FolderAttributes
 {
-    /// <summary>Rend un fichier cache et systeme.</summary>
-    /// <param name="filePath">Chemin du fichier.</param>
-    /// <exception cref="ArgumentException"><paramref name="filePath"/> est vide.</exception>
+    /// <summary>Marks a file hidden and system.</summary>
+    /// <param name="filePath">Path of the file.</param>
+    /// <exception cref="ArgumentException"><paramref name="filePath"/> is empty.</exception>
     public static void MakeHiddenSystem(string filePath)
     {
         ArgumentException.ThrowIfNullOrEmpty(filePath);
@@ -35,14 +35,14 @@ public static class FolderAttributes
     }
 
     /// <summary>
-    /// Retire les attributs Hidden, System et ReadOnly d'un fichier.
+    /// Clears the Hidden, System and ReadOnly attributes of a file.
     /// </summary>
-    /// <param name="filePath">Chemin du fichier.</param>
+    /// <param name="filePath">Path of the file.</param>
     /// <remarks>
-    /// Necessaire avant toute reecriture ou suppression : sous Windows, ouvrir en ecriture un
-    /// fichier cache leve <see cref="UnauthorizedAccessException"/>.
+    /// Required before any rewrite or deletion: on Windows, opening a hidden file for writing
+    /// throws <see cref="UnauthorizedAccessException"/>.
     /// </remarks>
-    /// <exception cref="ArgumentException"><paramref name="filePath"/> est vide.</exception>
+    /// <exception cref="ArgumentException"><paramref name="filePath"/> is empty.</exception>
     public static void ClearFileFlags(string filePath)
     {
         ArgumentException.ThrowIfNullOrEmpty(filePath);
@@ -61,13 +61,13 @@ public static class FolderAttributes
         }
     }
 
-    /// <summary>Indique si un dossier porte deja ReadOnly ou System.</summary>
-    /// <param name="folderPath">Chemin du dossier.</param>
+    /// <summary>Indicates whether a folder already carries ReadOnly or System.</summary>
+    /// <param name="folderPath">Path of the folder.</param>
     /// <returns>
-    /// <see langword="true"/> si l'Explorateur lira deja le <c>desktop.ini</c> de ce dossier sans
-    /// que nous ayons a toucher a ses attributs.
+    /// <see langword="true"/> when Explorer will already read that folder's <c>desktop.ini</c>
+    /// without us touching its attributes.
     /// </returns>
-    /// <exception cref="ArgumentException"><paramref name="folderPath"/> est vide.</exception>
+    /// <exception cref="ArgumentException"><paramref name="folderPath"/> is empty.</exception>
     public static bool IsFolderCustomizable(string folderPath)
     {
         ArgumentException.ThrowIfNullOrEmpty(folderPath);
@@ -82,14 +82,14 @@ public static class FolderAttributes
     }
 
     /// <summary>
-    /// Pose l'attribut ReadOnly sur un dossier s'il ne porte ni ReadOnly ni System.
+    /// Sets the ReadOnly attribute on a folder when it carries neither ReadOnly nor System.
     /// </summary>
-    /// <param name="folderPath">Chemin du dossier.</param>
+    /// <param name="folderPath">Path of the folder.</param>
     /// <returns>
-    /// <see langword="true"/> si <b>nous</b> venons de poser l'attribut. Cette valeur doit etre
-    /// conservee dans le journal : elle seule autorisera a le retirer plus tard (CLAUDE.md §6.3).
+    /// <see langword="true"/> when <b>we</b> just set the attribute. That value must be kept in the
+    /// journal: it alone permits removing it later (CLAUDE.md 6.3).
     /// </returns>
-    /// <exception cref="ArgumentException"><paramref name="folderPath"/> est vide.</exception>
+    /// <exception cref="ArgumentException"><paramref name="folderPath"/> is empty.</exception>
     public static bool EnsureFolderCustomizable(string folderPath)
     {
         ArgumentException.ThrowIfNullOrEmpty(folderPath);
@@ -103,13 +103,13 @@ public static class FolderAttributes
         return true;
     }
 
-    /// <summary>Retire l'attribut ReadOnly d'un dossier.</summary>
-    /// <param name="folderPath">Chemin du dossier.</param>
+    /// <summary>Clears the ReadOnly attribute of a folder.</summary>
+    /// <param name="folderPath">Path of the folder.</param>
     /// <remarks>
-    /// A n'appeler que si le journal indique que c'est nous qui l'avons pose : le retirer
-    /// aveuglement casserait une personnalisation preexistante de l'utilisateur.
+    /// Call this only when the journal says we were the ones who set it: clearing it blindly would
+    /// break a customisation the user had made themselves.
     /// </remarks>
-    /// <exception cref="ArgumentException"><paramref name="folderPath"/> est vide.</exception>
+    /// <exception cref="ArgumentException"><paramref name="folderPath"/> is empty.</exception>
     public static void ClearFolderReadOnly(string folderPath)
     {
         ArgumentException.ThrowIfNullOrEmpty(folderPath);

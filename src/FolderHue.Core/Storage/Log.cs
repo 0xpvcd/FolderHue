@@ -4,11 +4,11 @@ using System.Text;
 namespace FolderHue.Core.Storage;
 
 /// <summary>
-/// Journal de diagnostic, plafonne en taille et garanti sans exception.
+/// Diagnostic log, capped in size and guaranteed not to throw.
 /// </summary>
 /// <remarks>
-/// Ce journal est ecrit depuis <c>explorer.exe</c> : aucune de ses methodes ne doit lever, meme
-/// disque plein ou fichier verrouille (CLAUDE.md §6.5). Toute erreur d'ecriture est avalee.
+/// This log is written from inside <c>explorer.exe</c>: none of its methods may throw, not even on
+/// a full disk or a locked file (CLAUDE.md 6.5). Every write error is swallowed.
 /// </remarks>
 public sealed class Log
 {
@@ -17,29 +17,29 @@ public sealed class Log
     private readonly string _filePath;
     private readonly object _gate = new();
 
-    /// <summary>Cree un journal adosse a un fichier.</summary>
-    /// <param name="filePath">Chemin du fichier de journal.</param>
-    /// <exception cref="ArgumentException"><paramref name="filePath"/> est vide.</exception>
+    /// <summary>Creates a log backed by a file.</summary>
+    /// <param name="filePath">Path of the log file.</param>
+    /// <exception cref="ArgumentException"><paramref name="filePath"/> is empty.</exception>
     public Log(string filePath)
     {
         ArgumentException.ThrowIfNullOrEmpty(filePath);
         _filePath = filePath;
     }
 
-    /// <summary>Journal par defaut de la machine courante.</summary>
+    /// <summary>Default log for the current machine.</summary>
     public static Log Default { get; } = new(AppPaths.Default.LogFile);
 
-    /// <summary>Ecrit une ligne d'information.</summary>
-    /// <param name="message">Le message. <see langword="null"/> est ignore.</param>
+    /// <summary>Writes an informational line.</summary>
+    /// <param name="message">The message. <see langword="null"/> is ignored.</param>
     public void Info(string message) => Write("INFO ", message, null);
 
-    /// <summary>Ecrit une ligne d'avertissement.</summary>
-    /// <param name="message">Le message. <see langword="null"/> est ignore.</param>
+    /// <summary>Writes a warning line.</summary>
+    /// <param name="message">The message. <see langword="null"/> is ignored.</param>
     public void Warn(string message) => Write("WARN ", message, null);
 
-    /// <summary>Ecrit une ligne d'erreur, avec l'exception associee si elle est fournie.</summary>
-    /// <param name="message">Le message decrivant le contexte.</param>
-    /// <param name="exception">L'exception a consigner, ou <see langword="null"/>.</param>
+    /// <summary>Writes an error line, with the associated exception when one is supplied.</summary>
+    /// <param name="message">The message describing the context.</param>
+    /// <param name="exception">The exception to record, or <see langword="null"/>.</param>
     public void Error(string message, Exception? exception = null) => Write("ERROR", message, exception);
 
     private void Write(string level, string message, Exception? exception)
@@ -77,7 +77,7 @@ public sealed class Log
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException)
         {
-            // Un journal indisponible ne doit jamais interrompre l'operation en cours.
+            // An unavailable log must never interrupt the operation in progress.
         }
     }
 
@@ -97,7 +97,7 @@ public sealed class Log
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            // Rotation impossible : on continue d'ecrire dans le fichier courant.
+            // Rotation impossible: keep writing to the current file.
         }
     }
 }

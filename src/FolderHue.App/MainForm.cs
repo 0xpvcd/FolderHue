@@ -12,10 +12,10 @@ using FolderHue.Core.Storage;
 namespace FolderHue.App;
 
 /// <summary>
-/// Fenetre de reglages : apercu de la palette, gestion des dossiers colorises, desinstallation propre.
+/// Settings window: palette preview, management of colored folders, clean removal.
 /// </summary>
 /// <remarks>
-/// Aucun libelle en dur : tout passe par <see cref="Loc"/> (CLAUDE.md §7).
+/// No hard-coded label: everything goes through <see cref="Loc"/> (CLAUDE.md 7).
 /// </remarks>
 [SupportedOSPlatform("windows")]
 internal sealed class MainForm : Form
@@ -156,10 +156,10 @@ internal sealed class MainForm : Form
             Margin = new Padding(0, 0, 0, 12),
         });
 
-        // Consequence assumee du stockage centralise des icones (CLAUDE.md §4.2).
+        // An accepted consequence of storing the icons centrally (CLAUDE.md 4.2).
         layout.Controls.Add(Paragraph(Loc.Get("App_PortabilityWarning")));
 
-        // Comportement normal a documenter plutot qu'a corriger (CLAUDE.md §10).
+        // Normal behaviour, to be documented rather than fixed (CLAUDE.md 10).
         layout.Controls.Add(Paragraph(Loc.Get("App_VersionControlNote")));
 
         var openLogs = new LinkLabel
@@ -223,7 +223,7 @@ internal sealed class MainForm : Form
 
             if (args.Error is not null)
             {
-                Log.Default.Error("La generation des icones a echoue.", args.Error);
+                Log.Default.Error("Icon generation failed.", args.Error);
                 _status.Text = args.Error.Message;
                 return;
             }
@@ -270,8 +270,8 @@ internal sealed class MainForm : Form
 
     private void RefreshFolders()
     {
-        // Un dossier supprime hors de l'application y laisse sa trace : rien ne nous en informe.
-        // La liste est le seul endroit ou l'utilisateur la verrait, donc celui ou on la retire.
+        // A folder deleted outside the application leaves its record behind: nothing tells us.
+        // This list is the only place the user would see it, so it is where we remove it.
         _customizer.Journal.PruneMissing();
 
         _foldersView.BeginUpdate();
@@ -361,7 +361,7 @@ internal sealed class MainForm : Form
         }
         catch (Exception e) when (e is Win32Exception or IOException or UnauthorizedAccessException)
         {
-            Log.Default.Warn($"Impossible d'ouvrir « {path} » : {e.Message}");
+            Log.Default.Warn($"Could not open \"{path}\": {e.Message}");
         }
     }
 

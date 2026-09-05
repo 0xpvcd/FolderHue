@@ -1,49 +1,49 @@
 namespace FolderHue.Core.Palette;
 
 /// <summary>
-/// Un marqueur de statut composite sur l'icone du dossier (important, en cours, termine...).
+/// A status marker composited onto the folder icon (important, in progress, done...).
 /// </summary>
 /// <remarks>
-/// Les emblemes sont compositees dans le <c>.ico</c> genere, jamais via
-/// <c>IShellIconOverlayIdentifier</c> : Windows ne charge qu'une quinzaine d'overlays au total et
-/// OneDrive, Dropbox ou Git en consomment deja la majorite (CLAUDE.md §2).
+/// Emblems are composited into the generated <c>.ico</c>, never through
+/// <c>IShellIconOverlayIdentifier</c>: Windows loads only about fifteen overlays in total, and
+/// OneDrive, Dropbox or Git already take most of them (CLAUDE.md 2).
 /// </remarks>
 /// <param name="Id">
-/// Identifiant stable, en minuscules. <see cref="None"/> utilise <c>"none"</c>, qui signifie
-/// « aucun embleme » et n'apparait pas dans le nom du fichier d'icone.
+/// Stable lowercase identifier. <see cref="None"/> uses <c>"none"</c>, which means "no emblem"
+/// and does not appear in the icon file name.
 /// </param>
-/// <param name="ResourceKey">Cle de <c>Strings.resx</c> pour le libelle affiche a l'utilisateur.</param>
+/// <param name="ResourceKey">Key in <c>Strings.resx</c> for the label shown to the user.</param>
 /// <param name="Glyph">
-/// Forme dessinee par le moteur de rendu. C'est une valeur logique, pas un caractere a afficher
-/// tel quel : <c>FolderHue.App</c> dessine chaque glyphe en vectoriel.
+/// The shape the renderer draws. This is a logical value, not a character to display as-is:
+/// <c>FolderHue.App</c> draws every glyph as vector artwork.
 /// </param>
 public sealed record Emblem(string Id, string ResourceKey, EmblemGlyph Glyph)
 {
-    /// <summary>Identifiant de l'absence d'embleme.</summary>
+    /// <summary>Identifier standing for the absence of an emblem.</summary>
     public const string NoneId = "none";
 
-    /// <summary>L'absence d'embleme : l'icone ne porte que la couleur.</summary>
+    /// <summary>No emblem: the icon carries the color only.</summary>
     public static Emblem None { get; } = new(NoneId, "Emblem_None", EmblemGlyph.None);
 }
 
-/// <summary>Forme geometrique dessinee pour un embleme.</summary>
+/// <summary>Geometric shape drawn for an emblem.</summary>
 public enum EmblemGlyph
 {
-    /// <summary>Aucun dessin.</summary>
+    /// <summary>Nothing is drawn.</summary>
     None = 0,
 
-    /// <summary>Point d'exclamation — « important ».</summary>
+    /// <summary>Exclamation mark - "important".</summary>
     Exclamation,
 
-    /// <summary>Fleche / chevron — « en cours ».</summary>
+    /// <summary>Arrow or chevron - "in progress".</summary>
     Arrow,
 
-    /// <summary>Coche — « termine ».</summary>
+    /// <summary>Check mark - "done".</summary>
     Check,
 
-    /// <summary>Cadenas — « verrouille ».</summary>
+    /// <summary>Padlock - "locked".</summary>
     Lock,
 
-    /// <summary>Etoile — « favori ».</summary>
+    /// <summary>Star - "favorite".</summary>
     Star,
 }

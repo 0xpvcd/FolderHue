@@ -7,31 +7,30 @@ using FolderHue.Core.Palette;
 namespace FolderHue.App.Icons;
 
 /// <summary>
-/// Produit un <c>.ico</c> multi-resolution pour une combinaison couleur + embleme.
+/// Produces a multi-resolution <c>.ico</c> for one color + emblem pair.
 /// </summary>
 /// <remarks>
-/// Chaine de traitement, par resolution : gabarit natif, teinte HSL (code pur de
-/// <c>FolderHue.Core</c>), compositing de l'embleme en GDI+, puis encodage — PNG a 256 px,
-/// DIB en dessous (CLAUDE.md §4.3).
+/// Pipeline, per resolution: native template, HSL tint (pure code from <c>FolderHue.Core</c>),
+/// emblem compositing in GDI+, then encoding - PNG at 256 px, DIB below that (CLAUDE.md 4.3).
 /// </remarks>
 [SupportedOSPlatform("windows")]
 internal sealed class IconRenderer
 {
     private readonly IReadOnlyDictionary<int, byte[]> _baseFrames;
 
-    /// <summary>Construit un moteur de rendu adosse a un gabarit deja extrait.</summary>
-    /// <param name="baseFrames">Tampons BGRA du gabarit, indexes par taille.</param>
-    /// <exception cref="ArgumentNullException"><paramref name="baseFrames"/> vaut <see langword="null"/>.</exception>
+    /// <summary>Builds a renderer on top of an already-extracted template.</summary>
+    /// <param name="baseFrames">The template's BGRA buffers, keyed by size.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="baseFrames"/> is <see langword="null"/>.</exception>
     internal IconRenderer(IReadOnlyDictionary<int, byte[]> baseFrames)
     {
         ArgumentNullException.ThrowIfNull(baseFrames);
         _baseFrames = baseFrames;
     }
 
-    /// <summary>Genere le fichier d'icone d'une combinaison.</summary>
-    /// <param name="color">La teinte a appliquer.</param>
-    /// <param name="emblem">L'embleme a compositer, eventuellement <see cref="Emblem.None"/>.</param>
-    /// <param name="outputPath">Chemin du <c>.ico</c> a ecrire.</param>
+    /// <summary>Generates the icon file for one pair.</summary>
+    /// <param name="color">The hue to apply.</param>
+    /// <param name="emblem">The emblem to composite, possibly <see cref="Emblem.None"/>.</param>
+    /// <param name="outputPath">Path of the <c>.ico</c> to write.</param>
     internal void Render(FolderColor color, Emblem emblem, string outputPath)
     {
         ArgumentNullException.ThrowIfNull(color);
@@ -65,12 +64,12 @@ internal sealed class IconRenderer
     }
 
     /// <summary>
-    /// Rend le gabarit d'apercu d'une couleur, pour l'interface de reglages.
+    /// Renders a color's preview for the settings window.
     /// </summary>
-    /// <param name="color">La teinte a appliquer.</param>
-    /// <param name="emblem">L'embleme a compositer.</param>
-    /// <param name="size">Taille souhaitee, qui doit exister dans le gabarit.</param>
-    /// <returns>Un bitmap dont l'appelant devient proprietaire, ou <see langword="null"/>.</returns>
+    /// <param name="color">The hue to apply.</param>
+    /// <param name="emblem">The emblem to composite.</param>
+    /// <param name="size">Desired size, which must exist in the template.</param>
+    /// <returns>A bitmap the caller takes ownership of, or <see langword="null"/>.</returns>
     internal Bitmap? RenderPreview(FolderColor color, Emblem emblem, int size)
     {
         if (!_baseFrames.TryGetValue(size, out byte[]? template))
@@ -93,13 +92,13 @@ internal sealed class IconRenderer
     }
 
     /// <summary>
-    /// Ecrit la puce de menu d'un embleme : la pastille seule, en grand.
+    /// Writes an emblem's menu chip: the badge on its own, drawn large.
     /// </summary>
-    /// <param name="emblem">L'embleme a representer, <see cref="Emblem.None"/> compris.</param>
-    /// <param name="outputPath">Chemin du <c>.ico</c> a ecrire.</param>
+    /// <param name="emblem">The emblem to represent, <see cref="Emblem.None"/> included.</param>
+    /// <param name="outputPath">Path of the <c>.ico</c> to write.</param>
     /// <remarks>
-    /// Aucun gabarit n'est necessaire : la pastille est entierement dessinee. C'est pourquoi la
-    /// methode est statique, contrairement au rendu des icones de dossier.
+    /// No template is needed: the badge is drawn from scratch. That is why this method is static,
+    /// unlike the folder icon rendering.
     /// </remarks>
     internal static void WriteEmblemChip(Emblem emblem, string outputPath)
     {
@@ -138,8 +137,8 @@ internal sealed class IconRenderer
 
         if (IconSizes.UsePng(size))
         {
-            // La trame 256 px doit etre encodee en PNG : c'est ce que le shell attend pour les
-            // grandes vignettes.
+            // The 256 px frame must be PNG-encoded: that is what the shell expects for large
+            // thumbnails.
             using var stream = new MemoryStream();
             bitmap.Save(stream, ImageFormat.Png);
             return new IcoFrame(size, size, stream.ToArray(), IsPng: true);

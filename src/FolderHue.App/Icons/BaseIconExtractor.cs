@@ -5,23 +5,23 @@ using FolderHue.Core.Icons;
 namespace FolderHue.App.Icons;
 
 /// <summary>
-/// Extrait l'icone de dossier native de la machine pour servir de gabarit a la colorisation.
+/// Extracts the machine's native folder icon to serve as the coloring template.
 /// </summary>
 /// <remarks>
-/// Aucun asset Microsoft n'est redistribue : l'extraction a lieu sur le poste de l'utilisateur, a
-/// partir de son propre shell. C'est aussi ce qui fait qu'une icone colorisee ressemble a
-/// Windows 10 sur Windows 10 et a Windows 11 sur Windows 11, sans code specifique.
+/// No Microsoft asset is redistributed: the extraction happens on the user's machine, from their
+/// own shell. It is also what makes a colored icon look like Windows 10 on Windows 10 and like
+/// Windows 11 on Windows 11, with no version-specific code.
 /// </remarks>
 [SupportedOSPlatform("windows")]
 internal static class BaseIconExtractor
 {
     /// <summary>
-    /// Extrait le gabarit a toutes les resolutions de <see cref="IconSizes.All"/>.
+    /// Extracts the template at every resolution in <see cref="IconSizes.All"/>.
     /// </summary>
     /// <returns>
-    /// Un tampon BGRA de haut en bas, alpha non premultiplie, par taille demandee.
+    /// One top-down BGRA buffer, alpha not premultiplied, per requested size.
     /// </returns>
-    /// <exception cref="InvalidOperationException">Le shell n'a pas fourni d'icone de dossier.</exception>
+    /// <exception cref="InvalidOperationException">The shell supplied no folder icon.</exception>
     internal static IReadOnlyDictionary<int, byte[]> Extract()
     {
         (string path, int index) = LocateFolderIcon();
@@ -31,19 +31,19 @@ internal static class BaseIconExtractor
         {
             frames[size] = ExtractSize(path, index, size)
                 ?? throw new InvalidOperationException(
-                    $"Impossible d'extraire l'icone de dossier en {size} px depuis « {path} ».");
+                    $"Could not extract the {size} px folder icon from \"{path}\".");
         }
 
         return frames;
     }
 
     /// <summary>
-    /// Determine le fichier et l'index de l'icone de dossier du shell.
+    /// Determines the file and index of the shell's folder icon.
     /// </summary>
-    /// <returns>Le chemin du fichier de ressources et l'index de l'icone.</returns>
+    /// <returns>The resource file path and the icon index.</returns>
     /// <remarks>
-    /// On interroge le shell plutot que de coder « imageres.dll,-3 » en dur : l'emplacement a
-    /// deja change entre versions de Windows.
+    /// We ask the shell rather than hard-coding "imageres.dll,-3": that location has already moved
+    /// between Windows versions.
     /// </remarks>
     private static (string Path, int Index) LocateFolderIcon()
     {
@@ -60,14 +60,14 @@ internal static class BaseIconExtractor
         if (hr != 0)
         {
             throw new InvalidOperationException(
-                $"SHGetStockIconInfo a echoue (HRESULT 0x{hr:X8}).");
+                $"SHGetStockIconInfo failed (HRESULT 0x{hr:X8}).");
         }
 
         string path = ReadPath(ref info);
 
         if (string.IsNullOrWhiteSpace(path))
         {
-            throw new InvalidOperationException("Le shell n'a pas indique de fichier d'icone de dossier.");
+            throw new InvalidOperationException("The shell reported no folder icon file.");
         }
 
         return (Environment.ExpandEnvironmentVariables(path), info.IconIndex);
@@ -82,16 +82,15 @@ internal static class BaseIconExtractor
     }
 
     /// <summary>
-    /// Extrait une resolution donnee, en essayant les deux conventions d'index.
+    /// Extracts one resolution, trying both index conventions.
     /// </summary>
-    /// <param name="path">Fichier de ressources.</param>
-    /// <param name="index">Index annonce par le shell.</param>
-    /// <param name="size">Taille souhaitee, en pixels.</param>
-    /// <returns>Le tampon BGRA, ou <see langword="null"/> en cas d'echec.</returns>
+    /// <param name="path">Resource file.</param>
+    /// <param name="index">Index the shell reported.</param>
+    /// <param name="size">Desired size, in pixels.</param>
+    /// <returns>The BGRA buffer, or <see langword="null"/> on failure.</returns>
     /// <remarks>
-    /// Un index negatif designe un identifiant de ressource, un index positif une position. Le
-    /// shell ne dit pas laquelle des deux conventions il emploie : on tente l'index tel quel, puis
-    /// son oppose.
+    /// A negative index names a resource identifier, a positive one a position. The shell does not
+    /// say which convention it used, so we try the index as given, then its negation.
     /// </remarks>
     private static unsafe byte[]? ExtractSize(string path, int index, int size)
     {
@@ -126,14 +125,14 @@ internal static class BaseIconExtractor
     }
 
     /// <summary>
-    /// Lit les pixels BGRA d'une icone.
+    /// Reads an icon's BGRA pixels.
     /// </summary>
-    /// <param name="icon">Handle de l'icone.</param>
-    /// <param name="size">Taille attendue, en pixels.</param>
-    /// <returns>Le tampon, ou <see langword="null"/> si la lecture a echoue.</returns>
+    /// <param name="icon">Icon handle.</param>
+    /// <param name="size">Expected size, in pixels.</param>
+    /// <returns>The buffer, or <see langword="null"/> when the read failed.</returns>
     /// <remarks>
-    /// <c>Bitmap.FromHicon</c> serait plus court mais perd le canal alpha sur beaucoup d'icones :
-    /// on passe donc par <c>GetDIBits</c>, qui rend les 32 bits tels qu'ils sont stockes.
+    /// <c>Bitmap.FromHicon</c> would be shorter but loses the alpha channel on many icons, so we
+    /// go through <c>GetDIBits</c>, which returns the 32 bits exactly as stored.
     /// </remarks>
     private static unsafe byte[]? ReadIconPixels(IntPtr icon, int size)
     {
@@ -220,16 +219,16 @@ internal static class BaseIconExtractor
     }
 
     /// <summary>
-    /// Reconstruit le canal alpha a partir du masque quand l'icone n'en porte pas.
+    /// Rebuilds the alpha channel from the mask when the icon carries none.
     /// </summary>
-    /// <param name="pixels">Tampon BGRA a corriger.</param>
-    /// <param name="mask">Bitmap de masque de l'icone.</param>
-    /// <param name="screen">Contexte de peripherique de reference.</param>
-    /// <param name="width">Largeur en pixels.</param>
-    /// <param name="height">Hauteur en pixels.</param>
+    /// <param name="pixels">BGRA buffer to fix up.</param>
+    /// <param name="mask">The icon's mask bitmap.</param>
+    /// <param name="screen">Reference device context.</param>
+    /// <param name="width">Width in pixels.</param>
+    /// <param name="height">Height in pixels.</param>
     /// <remarks>
-    /// Les icones anciennes, en 24 bits, ont un canal alpha entierement nul : sans cette
-    /// correction le gabarit serait totalement transparent.
+    /// Older 24-bit icons have an all-zero alpha channel: without this correction the template
+    /// would be entirely transparent.
     /// </remarks>
     private static unsafe void ApplyMaskIfOpaque(
         byte[] pixels, IntPtr mask, IntPtr screen, int width, int height)
@@ -274,8 +273,8 @@ internal static class BaseIconExtractor
 
         fixed (byte* buffer = maskBits)
         {
-            // Le masque est en 1 bpp : GetDIBits attend une palette a la suite de l'en-tete, mais
-            // il tolere son absence tant qu'on ne lit que les bits.
+            // The mask is 1 bpp: GetDIBits expects a palette after the header, but tolerates its
+            // absence as long as we only read the bits.
             NativeMethods.GetDIBits(screen, mask, 0, (uint)height, buffer, ref header, NativeMethods.DibRgbColors);
         }
 
@@ -283,7 +282,7 @@ internal static class BaseIconExtractor
         {
             for (int x = 0; x < width; x++)
             {
-                // Dans le masque AND, un bit a 1 signifie « transparent ».
+                // In the AND mask, a set bit means "transparent".
                 bool transparent = (maskBits[(y * stride) + (x >> 3)] & (0x80 >> (x & 7))) != 0;
                 pixels[(((y * width) + x) * 4) + 3] = transparent ? (byte)0 : (byte)255;
             }
@@ -291,16 +290,16 @@ internal static class BaseIconExtractor
     }
 
     /// <summary>
-    /// Redimensionne un tampon BGRA par interpolation bilineaire.
+    /// Resizes a BGRA buffer with bilinear interpolation.
     /// </summary>
-    /// <param name="source">Tampon d'origine.</param>
-    /// <param name="width">Largeur d'origine.</param>
-    /// <param name="height">Hauteur d'origine.</param>
-    /// <param name="size">Taille carree souhaitee.</param>
-    /// <returns>Le tampon redimensionne.</returns>
+    /// <param name="source">Original buffer.</param>
+    /// <param name="width">Original width.</param>
+    /// <param name="height">Original height.</param>
+    /// <param name="size">Desired square size.</param>
+    /// <returns>The resized buffer.</returns>
     /// <remarks>
-    /// Ce chemin ne sert que de filet de securite : <c>PrivateExtractIcons</c> rend normalement
-    /// deja la taille demandee.
+    /// This path is only a safety net: <c>PrivateExtractIcons</c> normally returns the requested
+    /// size already.
     /// </remarks>
     private static byte[] Resample(byte[] source, int width, int height, int size)
     {

@@ -3,42 +3,42 @@ using System.Text.Json;
 namespace FolderHue.Core.Storage;
 
 /// <summary>
-/// Journal local des dossiers colorises, persiste dans <c>applied.json</c>.
+/// Local journal of colored folders, persisted in <c>applied.json</c>.
 /// </summary>
 /// <remarks>
-/// Plusieurs ecrivains sont possibles en meme temps : un <c>Invoke</c> du menu contextuel traite N
-/// dossiers, et <c>FolderHue.App</c> peut tourner en parallele. Toutes les operations passent
-/// donc par un mutex nomme et par une ecriture atomique (fichier temporaire puis remplacement).
+/// Several writers are possible at once: one <c>Invoke</c> of the context menu handles N folders,
+/// and <c>FolderHue.App</c> may be running alongside. Every operation therefore goes through a
+/// named mutex and an atomic write (temporary file, then replace).
 /// <para>
-/// Aucune methode ne leve : un journal illisible est traite comme un journal vide. Perdre la trace
-/// est genant, faire tomber <c>explorer.exe</c> le serait beaucoup plus (CLAUDE.md §6.5).
+/// No method throws: an unreadable journal is treated as an empty one. Losing the record is
+/// annoying; bringing <c>explorer.exe</c> down would be far worse (CLAUDE.md 6.5).
 /// </para>
 /// </remarks>
 public sealed class AppliedJournal
 {
-    // Local\ et non Global\ : le shell et l'app tournent dans la meme session utilisateur, et
-    // Global\ exigerait un privilege particulier.
+    // Local\ and not Global\: the shell and the app run in the same user session, and Global\
+    // would demand a specific privilege.
     private const string MutexName = @"Local\FolderHue.AppliedJournal";
     private static readonly TimeSpan LockTimeout = TimeSpan.FromSeconds(5);
 
     private readonly string _filePath;
 
-    /// <summary>Cree un journal adosse a un fichier.</summary>
-    /// <param name="filePath">Chemin de <c>applied.json</c>. Le fichier peut ne pas exister.</param>
-    /// <exception cref="ArgumentException"><paramref name="filePath"/> est vide.</exception>
+    /// <summary>Creates a journal backed by a file.</summary>
+    /// <param name="filePath">Path of <c>applied.json</c>. The file need not exist.</param>
+    /// <exception cref="ArgumentException"><paramref name="filePath"/> is empty.</exception>
     public AppliedJournal(string filePath)
     {
         ArgumentException.ThrowIfNullOrEmpty(filePath);
         _filePath = filePath;
     }
 
-    /// <summary>Lit toutes les entrees du journal.</summary>
-    /// <returns>Les entrees, ou une liste vide si le journal est absent ou illisible.</returns>
+    /// <summary>Reads every entry in the journal.</summary>
+    /// <returns>The entries, or an empty list when the journal is missing or unreadable.</returns>
     public IReadOnlyList<AppliedEntry> ReadAll() => Read().Entries;
 
-    /// <summary>Retourne l'entree correspondant a un dossier.</summary>
-    /// <param name="folderPath">Chemin du dossier, compare sans tenir compte de la casse.</param>
-    /// <returns>L'entree, ou <see langword="null"/> si le dossier n'est pas suivi.</returns>
+    /// <summary>Returns the entry for a folder.</summary>
+    /// <param name="folderPath">Folder path, compared case-insensitively.</param>
+    /// <returns>The entry, or <see langword="null"/> when the folder is not tracked.</returns>
     public AppliedEntry? Find(string folderPath)
     {
         if (string.IsNullOrEmpty(folderPath))
@@ -59,9 +59,9 @@ public sealed class AppliedJournal
         return null;
     }
 
-    /// <summary>Ajoute ou remplace l'entree d'un dossier.</summary>
-    /// <param name="entry">L'entree a enregistrer. Son <see cref="AppliedEntry.Path"/> sert de cle.</param>
-    /// <returns><see langword="true"/> si le journal a pu etre ecrit.</returns>
+    /// <summary>Adds or replaces a folder's entry.</summary>
+    /// <param name="entry">The entry to record. Its <see cref="AppliedEntry.Path"/> is the key.</param>
+    /// <returns><see langword="true"/> when the journal could be written.</returns>
     public bool Upsert(AppliedEntry entry)
     {
         ArgumentNullException.ThrowIfNull(entry);
@@ -80,9 +80,9 @@ public sealed class AppliedJournal
         });
     }
 
-    /// <summary>Retire l'entree d'un dossier.</summary>
-    /// <param name="folderPath">Chemin du dossier.</param>
-    /// <returns><see langword="true"/> si le journal a pu etre ecrit.</returns>
+    /// <summary>Removes a folder's entry.</summary>
+    /// <param name="folderPath">Folder path.</param>
+    /// <returns><see langword="true"/> when the journal could be written.</returns>
     public bool Remove(string folderPath)
     {
         if (string.IsNullOrEmpty(folderPath))
@@ -100,20 +100,19 @@ public sealed class AppliedJournal
     }
 
     /// <summary>
-    /// Retire les entrees dont le dossier a disparu du disque.
+    /// Removes entries whose folder has disappeared from disk.
     /// </summary>
-    /// <returns>Le nombre d'entrees retirees, 0 si le journal n'a pas pu etre reecrit.</returns>
+    /// <returns>How many entries were removed, 0 when the journal could not be rewritten.</returns>
     /// <remarks>
-    /// Un dossier supprime ou renomme par l'utilisateur laisse sa trace derriere lui : rien ne nous
-    /// en informe, et le journal grossit indefiniment. Une trace perimee n'est pas qu'un poids
-    /// mort : si un dossier different reprend plus tard le meme chemin, <c>Apply</c> la prend pour
-    /// une colorisation anterieure et saute la sauvegarde de son <c>desktop.ini</c> (CLAUDE.md
-    /// §6.1).
+    /// A folder the user deleted or renamed leaves its record behind: nothing tells us, and the
+    /// journal grows without bound. A stale record is not merely dead weight: if a different folder
+    /// later takes the same path, <c>Apply</c> mistakes it for an earlier coloring and skips
+    /// backing up its <c>desktop.ini</c> (CLAUDE.md 6.1).
     /// <para>
-    /// Une entree n'est retiree que si le <b>volume</b> qui la porte repond. Un disque amovible
-    /// debranche ou un partage reseau hors ligne rend <see cref="Directory.Exists(string)"/> faux
-    /// sur un dossier bien vivant : le purger perdrait la trace de l'attribut <c>+r</c>, et
-    /// interdirait toute reinitialisation propre au retour du volume (CLAUDE.md §6.3).
+    /// An entry is removed only when the <b>volume</b> carrying it answers. An unplugged removable
+    /// disk or an offline network share makes <see cref="Directory.Exists(string)"/> false for a
+    /// perfectly live folder: purging it would lose the record of the <c>+r</c> attribute and make
+    /// a clean reset impossible once the volume comes back (CLAUDE.md 6.3).
     /// </para>
     /// </remarks>
     public int PruneMissing()
@@ -130,13 +129,14 @@ public sealed class AppliedJournal
     }
 
     /// <summary>
-    /// Determine si un dossier suivi a reellement disparu, par opposition a simplement injoignable.
+    /// Determines whether a tracked folder has genuinely disappeared, as opposed to merely being
+    /// unreachable.
     /// </summary>
-    /// <param name="folderPath">Chemin de l'entree.</param>
+    /// <param name="folderPath">Path held by the entry.</param>
     /// <returns>
-    /// <see langword="true"/> seulement si le volume repond et que le dossier n'y est plus. Dans le
-    /// doute, la reponse est <see langword="false"/> : garder une trace inutile est benin, en
-    /// perdre une ne l'est pas.
+    /// <see langword="true"/> only when the volume answers and the folder is no longer on it. When
+    /// in doubt the answer is <see langword="false"/>: keeping a useless record is harmless,
+    /// losing a real one is not.
     /// </returns>
     private static bool IsGone(string folderPath)
     {
@@ -163,13 +163,13 @@ public sealed class AppliedJournal
     }
 
     /// <summary>
-    /// Lit, modifie et reecrit le journal sous verrou.
+    /// Reads, modifies and rewrites the journal under a lock.
     /// </summary>
     /// <param name="mutation">
-    /// Transformation a appliquer. Elle doit retourner <see langword="true"/> pour que le resultat
-    /// soit ecrit sur disque.
+    /// The transformation to apply. It must return <see langword="true"/> for the result to be
+    /// written to disk.
     /// </param>
-    /// <returns><see langword="true"/> si l'ecriture a reussi.</returns>
+    /// <returns><see langword="true"/> when the write succeeded.</returns>
     public bool Mutate(Func<AppliedJournalData, bool> mutation)
     {
         ArgumentNullException.ThrowIfNull(mutation);
@@ -185,7 +185,7 @@ public sealed class AppliedJournal
             }
             catch (AbandonedMutexException)
             {
-                // Un autre processus est mort en tenant le verrou : on reprend la main.
+                // Another process died holding the lock: take it over.
                 held = true;
             }
 
@@ -237,7 +237,7 @@ public sealed class AppliedJournal
         }
         catch (JsonException)
         {
-            // Journal corrompu : on repart d'un journal vide plutot que de bloquer l'application.
+            // Corrupt journal: start from an empty one rather than blocking the application.
             return new AppliedJournalData();
         }
     }
@@ -257,7 +257,7 @@ public sealed class AppliedJournal
             JsonSerializer.Serialize(stream, data, AppliedJournalJsonContext.Default.AppliedJournalData);
         }
 
-        // Move avec ecrasement : le journal n'est jamais observe dans un etat partiel.
+        // Move with overwrite: the journal is never observed in a partial state.
         File.Move(temporary, _filePath, overwrite: true);
         return true;
     }

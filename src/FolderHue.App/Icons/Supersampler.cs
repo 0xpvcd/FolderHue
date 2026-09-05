@@ -6,30 +6,30 @@ using System.Runtime.Versioning;
 namespace FolderHue.App.Icons;
 
 /// <summary>
-/// Dessine une image en grand puis la reduit a la taille demandee.
+/// Draws an image large, then shrinks it to the requested size.
 /// </summary>
 /// <remarks>
-/// GDI+ anticrenele correctement une forme de 64 px, beaucoup moins bien la meme forme dessinee
-/// directement en 16 px : les coins arrondis et les petits cercles y decrochent. Toutes les
-/// vignettes du projet passent donc par ici.
+/// GDI+ antialiases a 64 px shape properly, and the same shape drawn straight at 16 px far less
+/// well: rounded corners and small circles break down. Every thumbnail in the project therefore
+/// goes through here.
 /// </remarks>
 [SupportedOSPlatform("windows")]
 internal static class Supersampler
 {
-    /// <summary>Facteur d'agrandissement applique avant reduction.</summary>
+    /// <summary>Magnification factor applied before shrinking.</summary>
     internal const int Factor = 4;
 
     /// <summary>
-    /// Rend une image carree en surechantillonnant.
+    /// Renders a square image with supersampling.
     /// </summary>
-    /// <param name="size">Cote final, en pixels.</param>
+    /// <param name="size">Final side, in pixels.</param>
     /// <param name="draw">
-    /// Dessine le contenu. Recoit la surface et le cote <b>agrandi</b> : tout doit etre exprime
-    /// relativement a ce cote, jamais en pixels absolus.
+    /// Draws the content. Receives the surface and the <b>magnified</b> side: everything must be
+    /// expressed relative to that side, never in absolute pixels.
     /// </param>
-    /// <returns>Un bitmap dont l'appelant devient proprietaire.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="draw"/> vaut <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="size"/> n'est pas positif.</exception>
+    /// <returns>A bitmap the caller takes ownership of.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="draw"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="size"/> is not positive.</exception>
     internal static Bitmap Render(int size, Action<Graphics, int> draw)
     {
         ArgumentNullException.ThrowIfNull(draw);

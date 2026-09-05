@@ -6,46 +6,46 @@ using FolderHue.Core.Palette;
 namespace FolderHue.App.Icons;
 
 /// <summary>
-/// Dessine les emblemes en vectoriel, a la volee.
+/// Draws the emblems as vector artwork, on the fly.
 /// </summary>
 /// <remarks>
-/// Les emblemes sont dessines plutot que charges depuis des PNG : rien a licencier, rien a
-/// versionner, et un rendu net a toutes les resolutions de <c>IconSizes.All</c>.
+/// Emblems are drawn rather than loaded from PNGs: nothing to license, nothing to version, and a
+/// crisp result at every resolution in <c>IconSizes.All</c>.
 /// <para>
-/// Ils sont compositees dans le <c>.ico</c>, jamais poses en overlay via
-/// <c>IShellIconOverlayIdentifier</c> : Windows ne charge qu'une quinzaine d'overlays au total et
-/// OneDrive, Dropbox ou Git en consomment deja la plupart (CLAUDE.md §2).
+/// They are composited into the <c>.ico</c>, never laid over it through
+/// <c>IShellIconOverlayIdentifier</c>: Windows loads only about fifteen overlays in total, and
+/// OneDrive, Dropbox or Git already take most of them (CLAUDE.md 2).
 /// </para>
 /// </remarks>
 [SupportedOSPlatform("windows")]
 internal static class EmblemArtwork
 {
-    /// <summary>Part de la largeur de l'icone occupee par la pastille.</summary>
+    /// <summary>Share of the icon's width the badge occupies.</summary>
     private const float BadgeRatio = 0.40f;
 
     /// <summary>
-    /// En dessous de ce diametre de pastille, le glyphe devient illisible et seule la couleur reste.
+    /// Below this badge diameter the glyph becomes illegible and only the color remains.
     /// </summary>
     /// <remarks>
-    /// Le seuil porte sur la <b>pastille</b>, pas sur l'icone. Compositee sur un dossier la
-    /// pastille ne fait que <see cref="BadgeRatio"/> de l'icone ; dessinee en puce de menu elle
-    /// occupe presque tout. Un seuil exprime en taille d'icone aurait prive les puces de leur
-    /// glyphe alors qu'elles ont largement la place.
+    /// The threshold is on the <b>badge</b>, not the icon. Composited onto a folder the badge is
+    /// only <see cref="BadgeRatio"/> of the icon; drawn as a menu chip it fills nearly all of it.
+    /// A threshold expressed in icon size would have stripped the chips of their glyph even though
+    /// they have plenty of room.
     /// </remarks>
     private const float MinimumBadgeSize = 9f;
 
-    /// <summary>Part de la puce laissee libre autour de la pastille.</summary>
+    /// <summary>Share of the chip left clear around the badge.</summary>
     private const float ChipInsetRatio = 0.06f;
 
-    /// <summary>Pastille de l'absence d'embleme, dessinee pour la puce « Aucun ».</summary>
+    /// <summary>Badge standing for no emblem, drawn for the "None" chip.</summary>
     private static readonly Color EmptyBadgeColor = Color.FromArgb(255, 158, 165, 176);
 
     /// <summary>
-    /// Composite un embleme en bas a droite d'une icone.
+    /// Composites an emblem at the bottom right of an icon.
     /// </summary>
-    /// <param name="graphics">Surface de dessin de l'icone.</param>
-    /// <param name="glyph">Forme a dessiner.</param>
-    /// <param name="iconSize">Taille de l'icone, en pixels.</param>
+    /// <param name="graphics">The icon's drawing surface.</param>
+    /// <param name="glyph">The shape to draw.</param>
+    /// <param name="iconSize">Icon size, in pixels.</param>
     internal static void Draw(Graphics graphics, EmblemGlyph glyph, int iconSize)
     {
         ArgumentNullException.ThrowIfNull(graphics);
@@ -63,15 +63,15 @@ internal static class EmblemArtwork
     }
 
     /// <summary>
-    /// Dessine la pastille d'un embleme en grand, pour servir de puce de menu.
+    /// Draws an emblem's badge large, to serve as a menu chip.
     /// </summary>
-    /// <param name="graphics">Surface de dessin de la puce.</param>
-    /// <param name="glyph">Forme a dessiner. <see cref="EmblemGlyph.None"/> donne une pastille vide.</param>
-    /// <param name="chipSize">Taille de la puce, en pixels.</param>
+    /// <param name="graphics">The chip's drawing surface.</param>
+    /// <param name="glyph">The shape to draw. <see cref="EmblemGlyph.None"/> gives an empty badge.</param>
+    /// <param name="chipSize">Chip size, in pixels.</param>
     /// <remarks>
-    /// Contrairement a <see cref="Draw"/>, <see cref="EmblemGlyph.None"/> n'est pas ignore : la
-    /// puce de l'entree « Aucun » est une pastille neutre, sans quoi cette entree serait la seule
-    /// du menu sans icone.
+    /// Unlike <see cref="Draw"/>, <see cref="EmblemGlyph.None"/> is not skipped: the "None" entry's
+    /// chip is a neutral badge, without which that entry would be the only one in the menu with no
+    /// icon.
     /// </remarks>
     internal static void DrawChip(Graphics graphics, EmblemGlyph glyph, int chipSize)
     {
@@ -84,18 +84,18 @@ internal static class EmblemArtwork
     }
 
     /// <summary>
-    /// Dessine une pastille et son glyphe dans un rectangle donne.
+    /// Draws a badge and its glyph inside a given rectangle.
     /// </summary>
-    /// <param name="graphics">Surface de dessin.</param>
-    /// <param name="glyph">Forme a dessiner.</param>
-    /// <param name="bounds">Rectangle englobant la pastille.</param>
-    /// <param name="fill">Couleur de remplissage de la pastille.</param>
+    /// <param name="graphics">Drawing surface.</param>
+    /// <param name="glyph">The shape to draw.</param>
+    /// <param name="bounds">Rectangle bounding the badge.</param>
+    /// <param name="fill">Fill color of the badge.</param>
     private static void DrawBadge(Graphics graphics, EmblemGlyph glyph, RectangleF bounds, Color fill)
     {
         graphics.SmoothingMode = SmoothingMode.AntiAlias;
         graphics.CompositingQuality = CompositingQuality.HighQuality;
 
-        // Liseré de contraste : sans lui, une pastille rouge sur un dossier rouge disparait.
+        // Contrast outline: without it a red badge on a red folder disappears.
         float ring = Math.Max(1f, bounds.Width * 0.10f);
         using (var pen = new Pen(Color.White, ring))
         {
@@ -107,7 +107,7 @@ internal static class EmblemArtwork
 
         if (bounds.Width < MinimumBadgeSize)
         {
-            // Trop petit : la couleur de la pastille porte a elle seule l'information.
+            // Too small: the badge color carries the information on its own.
             return;
         }
 

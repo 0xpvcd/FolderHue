@@ -1,41 +1,40 @@
 namespace FolderHue.Core.Icons;
 
 /// <summary>
-/// Les resolutions embarquees dans chaque <c>.ico</c> genere.
+/// The resolutions embedded in every generated <c>.ico</c>.
 /// </summary>
 public static class IconSizes
 {
     /// <summary>
-    /// Toutes les tailles produites, en pixels, par ordre croissant.
+    /// Every size produced, in pixels, ascending.
     /// </summary>
     /// <remarks>
-    /// La liste couvre les vues de l'Explorateur, de « Details » (16 px) a « Tres grandes icones »
-    /// (256 px), ainsi que les paliers intermediaires utilises par la mise a l'echelle DPI
-    /// (CLAUDE.md §4.3).
+    /// The list covers Explorer's views, from Details (16 px) to Extra large icons (256 px), plus
+    /// the intermediate steps DPI scaling asks for (CLAUDE.md 4.3).
     /// </remarks>
     public static IReadOnlyList<int> All { get; } = [16, 20, 24, 32, 40, 48, 64, 96, 128, 256];
 
     /// <summary>
-    /// Les resolutions embarquees dans les <c>.ico</c> de logo.
+    /// The resolutions embedded in the logo <c>.ico</c> files.
     /// </summary>
     /// <remarks>
-    /// Un logo de menu n'est jamais affiche au-dela d'une cinquantaine de pixels : le shell
-    /// demande <c>SM_CXSMICON</c>, soit 16 px a 100 % et 32 px a 200 %. Inutile d'embarquer les
-    /// grandes trames de <see cref="All"/>, qui ne serviraient qu'a alourdir le fichier.
+    /// A menu chip is never drawn beyond about fifty pixels: the shell asks for
+    /// <c>SM_CXSMICON</c>, which is 16 px at 100% and 32 px at 200%. Embedding the large frames
+    /// from <see cref="All"/> would only make the file heavier.
     /// </remarks>
     public static IReadOnlyList<int> Logo { get; } = [16, 20, 24, 32, 40, 48, 64];
 
-    /// <summary>Taille maximale representable dans un conteneur ICO.</summary>
+    /// <summary>Largest size an ICO container can represent.</summary>
     public const int MaxSize = 256;
 
     /// <summary>
-    /// Indique si une taille doit etre encodee en PNG dans le conteneur ICO.
+    /// Indicates whether a size must be PNG-encoded inside the ICO container.
     /// </summary>
-    /// <param name="size">La taille, en pixels.</param>
-    /// <returns><see langword="true"/> pour 256 px, <see langword="false"/> sinon.</returns>
+    /// <param name="size">The size, in pixels.</param>
+    /// <returns><see langword="true"/> for 256 px, <see langword="false"/> otherwise.</returns>
     /// <remarks>
-    /// L'encodage PNG est obligatoire pour la trame 256 px (CLAUDE.md §4.3). Les petites tailles
-    /// restent en DIB : c'est le format historiquement le mieux gere par toutes les vues du shell.
+    /// PNG encoding is mandatory for the 256 px frame (CLAUDE.md 4.3). Smaller sizes stay as DIBs,
+    /// the format every shell view has always handled best.
     /// </remarks>
     public static bool UsePng(int size) => size >= MaxSize;
 }

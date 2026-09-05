@@ -4,27 +4,27 @@ using System.Runtime.Versioning;
 namespace FolderHue.App;
 
 /// <summary>
-/// Unique point d'entree P/Invoke de <c>FolderHue.App</c> (CLAUDE.md §7).
+/// The single P/Invoke entry point of <c>FolderHue.App</c> (CLAUDE.md 7).
 /// </summary>
 /// <remarks>
-/// Ces appels servent a une seule chose : extraire l'icone de dossier native de la machine pour
-/// s'en servir de gabarit. C'est ce qui fait qu'une icone colorisee garde l'aspect de Windows 10
-/// sur Windows 10 et de Windows 11 sur Windows 11.
+/// These calls serve one purpose: extracting the machine's native folder icon to use as a
+/// template. That is what makes a colored icon keep the Windows 10 look on Windows 10 and the
+/// Windows 11 look on Windows 11.
 /// </remarks>
 [SupportedOSPlatform("windows")]
 internal static unsafe partial class NativeMethods
 {
-    /// <summary>Icone de dossier standard. <c>SIID_FOLDER</c>, shellapi.h.</summary>
+    /// <summary>The standard folder icon. <c>SIID_FOLDER</c>, shellapi.h.</summary>
     internal const uint SIID_FOLDER = 3;
 
-    /// <summary>Remplit <c>szPath</c> et <c>iIcon</c>. <c>SHGSI_ICONLOCATION</c>, shellapi.h.</summary>
+    /// <summary>Fills <c>szPath</c> and <c>iIcon</c>. <c>SHGSI_ICONLOCATION</c>, shellapi.h.</summary>
     internal const uint SHGSI_ICONLOCATION = 0;
 
-    /// <summary>Couleurs brutes du DIB. <c>DIB_RGB_COLORS</c>, wingdi.h.</summary>
+    /// <summary>Raw DIB colors. <c>DIB_RGB_COLORS</c>, wingdi.h.</summary>
     private const uint DIB_RGB_COLORS = 0;
 
     /// <summary>
-    /// Informations sur une icone systeme.
+    /// Information about a stock icon.
     /// </summary>
     /// <remarks><c>SHSTOCKICONINFO</c>, shellapi.h.</remarks>
     [StructLayout(LayoutKind.Sequential)]
@@ -38,7 +38,7 @@ internal static unsafe partial class NativeMethods
     }
 
     /// <summary>
-    /// Descripteur d'un bitmap GDI.
+    /// Descriptor of a GDI bitmap.
     /// </summary>
     /// <remarks><c>BITMAP</c>, wingdi.h.</remarks>
     [StructLayout(LayoutKind.Sequential)]
@@ -54,7 +54,7 @@ internal static unsafe partial class NativeMethods
     }
 
     /// <summary>
-    /// En-tete d'un DIB.
+    /// Header of a DIB.
     /// </summary>
     /// <remarks><c>BITMAPINFOHEADER</c>, wingdi.h.</remarks>
     [StructLayout(LayoutKind.Sequential)]
@@ -74,7 +74,7 @@ internal static unsafe partial class NativeMethods
     }
 
     /// <summary>
-    /// Composants d'une icone.
+    /// The parts an icon is made of.
     /// </summary>
     /// <remarks><c>ICONINFO</c>, winuser.h.</remarks>
     [StructLayout(LayoutKind.Sequential)]
@@ -88,25 +88,25 @@ internal static unsafe partial class NativeMethods
     }
 
     /// <summary>
-    /// Retrouve le fichier et l'index d'une icone systeme.
+    /// Finds the file and index of a stock icon.
     /// </summary>
     /// <remarks>
-    /// Win32 : <c>SHGetStockIconInfo</c>, shell32.dll, en-tete shellapi.h.
-    /// Doc : https://learn.microsoft.com/windows/win32/api/shellapi/nf-shellapi-shgetstockiconinfo
-    /// C'est l'API sanctionnee pour localiser l'icone de dossier, plutot que de coder en dur
-    /// « imageres.dll,-3 » qui varie selon les versions de Windows.
+    /// Win32: <c>SHGetStockIconInfo</c>, shell32.dll, header shellapi.h.
+    /// Docs: https://learn.microsoft.com/windows/win32/api/shellapi/nf-shellapi-shgetstockiconinfo
+    /// This is the sanctioned API for locating the folder icon, rather than hard-coding
+    /// "imageres.dll,-3", which varies between Windows versions.
     /// </remarks>
     [LibraryImport("shell32.dll", EntryPoint = "SHGetStockIconInfo")]
     internal static partial int SHGetStockIconInfo(uint siid, uint uFlags, ref StockIconInfo psii);
 
     /// <summary>
-    /// Extrait des icones d'un fichier a une taille donnee.
+    /// Extracts icons from a file at a given size.
     /// </summary>
     /// <remarks>
-    /// Win32 : <c>PrivateExtractIconsW</c>, user32.dll, en-tete winuser.h.
-    /// Doc : https://learn.microsoft.com/windows/win32/api/winuser/nf-winuser-privateextracticonsw
-    /// Contrairement a <c>ExtractIconEx</c>, cette fonction accepte une taille arbitraire et
-    /// choisit la meilleure trame disponible, ce qui donne les dix resolutions du gabarit.
+    /// Win32: <c>PrivateExtractIconsW</c>, user32.dll, header winuser.h.
+    /// Docs: https://learn.microsoft.com/windows/win32/api/winuser/nf-winuser-privateextracticonsw
+    /// Unlike <c>ExtractIconEx</c>, this function accepts an arbitrary size and picks the best
+    /// available frame, which is what yields the template's ten resolutions.
     /// </remarks>
     [LibraryImport("user32.dll", EntryPoint = "PrivateExtractIconsW", StringMarshalling = StringMarshalling.Utf16)]
     internal static partial uint PrivateExtractIcons(
@@ -120,46 +120,46 @@ internal static unsafe partial class NativeMethods
         uint flags);
 
     /// <summary>
-    /// Recupere les bitmaps composant une icone.
+    /// Retrieves the bitmaps an icon is composed of.
     /// </summary>
     /// <remarks>
-    /// Win32 : <c>GetIconInfo</c>, user32.dll, en-tete winuser.h.
-    /// Doc : https://learn.microsoft.com/windows/win32/api/winuser/nf-winuser-geticoninfo
-    /// L'appelant doit liberer <c>MaskBitmap</c> et <c>ColorBitmap</c> avec <c>DeleteObject</c>.
+    /// Win32: <c>GetIconInfo</c>, user32.dll, header winuser.h.
+    /// Docs: https://learn.microsoft.com/windows/win32/api/winuser/nf-winuser-geticoninfo
+    /// The caller must release <c>MaskBitmap</c> and <c>ColorBitmap</c> with <c>DeleteObject</c>.
     /// </remarks>
     [LibraryImport("user32.dll", EntryPoint = "GetIconInfo")]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static partial bool GetIconInfo(IntPtr hIcon, out IconInfo piconinfo);
 
     /// <summary>
-    /// Detruit une icone.
+    /// Destroys an icon.
     /// </summary>
     /// <remarks>
-    /// Win32 : <c>DestroyIcon</c>, user32.dll, en-tete winuser.h.
-    /// Doc : https://learn.microsoft.com/windows/win32/api/winuser/nf-winuser-destroyicon
+    /// Win32: <c>DestroyIcon</c>, user32.dll, header winuser.h.
+    /// Docs: https://learn.microsoft.com/windows/win32/api/winuser/nf-winuser-destroyicon
     /// </remarks>
     [LibraryImport("user32.dll", EntryPoint = "DestroyIcon")]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static partial bool DestroyIcon(IntPtr hIcon);
 
     /// <summary>
-    /// Lit les caracteristiques d'un objet GDI.
+    /// Reads a GDI object's characteristics.
     /// </summary>
     /// <remarks>
-    /// Win32 : <c>GetObjectW</c>, gdi32.dll, en-tete wingdi.h.
-    /// Doc : https://learn.microsoft.com/windows/win32/api/wingdi/nf-wingdi-getobject
+    /// Win32: <c>GetObjectW</c>, gdi32.dll, header wingdi.h.
+    /// Docs: https://learn.microsoft.com/windows/win32/api/wingdi/nf-wingdi-getobject
     /// </remarks>
     [LibraryImport("gdi32.dll", EntryPoint = "GetObjectW")]
     internal static partial int GetObject(IntPtr hgdiobj, int cbBuffer, out BitmapInfoStruct lpvObject);
 
     /// <summary>
-    /// Copie les pixels d'un bitmap dans un tampon, au format demande.
+    /// Copies a bitmap's pixels into a buffer, in the requested format.
     /// </summary>
     /// <remarks>
-    /// Win32 : <c>GetDIBits</c>, gdi32.dll, en-tete wingdi.h.
-    /// Doc : https://learn.microsoft.com/windows/win32/api/wingdi/nf-wingdi-getdibits
-    /// Une hauteur negative dans l'en-tete demande un balayage de haut en bas, ce qui evite
-    /// d'avoir a retourner l'image ensuite.
+    /// Win32: <c>GetDIBits</c>, gdi32.dll, header wingdi.h.
+    /// Docs: https://learn.microsoft.com/windows/win32/api/wingdi/nf-wingdi-getdibits
+    /// A negative height in the header asks for a top-down scan, which saves flipping the image
+    /// afterwards.
     /// </remarks>
     [LibraryImport("gdi32.dll", EntryPoint = "GetDIBits")]
     internal static partial int GetDIBits(
@@ -172,36 +172,36 @@ internal static unsafe partial class NativeMethods
         uint usage);
 
     /// <summary>
-    /// Libere un objet GDI.
+    /// Releases a GDI object.
     /// </summary>
     /// <remarks>
-    /// Win32 : <c>DeleteObject</c>, gdi32.dll, en-tete wingdi.h.
-    /// Doc : https://learn.microsoft.com/windows/win32/api/wingdi/nf-wingdi-deleteobject
+    /// Win32: <c>DeleteObject</c>, gdi32.dll, header wingdi.h.
+    /// Docs: https://learn.microsoft.com/windows/win32/api/wingdi/nf-wingdi-deleteobject
     /// </remarks>
     [LibraryImport("gdi32.dll", EntryPoint = "DeleteObject")]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static partial bool DeleteObject(IntPtr hObject);
 
     /// <summary>
-    /// Obtient un contexte de peripherique.
+    /// Obtains a device context.
     /// </summary>
     /// <remarks>
-    /// Win32 : <c>GetDC</c>, user32.dll, en-tete winuser.h.
-    /// Doc : https://learn.microsoft.com/windows/win32/api/winuser/nf-winuser-getdc
+    /// Win32: <c>GetDC</c>, user32.dll, header winuser.h.
+    /// Docs: https://learn.microsoft.com/windows/win32/api/winuser/nf-winuser-getdc
     /// </remarks>
     [LibraryImport("user32.dll", EntryPoint = "GetDC")]
     internal static partial IntPtr GetDC(IntPtr hWnd);
 
     /// <summary>
-    /// Rend un contexte de peripherique.
+    /// Returns a device context.
     /// </summary>
     /// <remarks>
-    /// Win32 : <c>ReleaseDC</c>, user32.dll, en-tete winuser.h.
-    /// Doc : https://learn.microsoft.com/windows/win32/api/winuser/nf-winuser-releasedc
+    /// Win32: <c>ReleaseDC</c>, user32.dll, header winuser.h.
+    /// Docs: https://learn.microsoft.com/windows/win32/api/winuser/nf-winuser-releasedc
     /// </remarks>
     [LibraryImport("user32.dll", EntryPoint = "ReleaseDC")]
     internal static partial int ReleaseDC(IntPtr hWnd, IntPtr hDC);
 
-    /// <summary>Constante <c>DIB_RGB_COLORS</c> pour <see cref="GetDIBits"/>.</summary>
+    /// <summary>The <c>DIB_RGB_COLORS</c> constant for <see cref="GetDIBits"/>.</summary>
     internal static uint DibRgbColors => DIB_RGB_COLORS;
 }

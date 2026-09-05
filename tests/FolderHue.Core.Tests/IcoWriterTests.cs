@@ -5,7 +5,7 @@ using Xunit;
 namespace FolderHue.Core.Tests;
 
 /// <summary>
-/// Verifie l'assemblage du conteneur ICO multi-resolution (CLAUDE.md §4.3).
+/// Checks how the multi-resolution ICO container is assembled (CLAUDE.md 4.3).
 /// </summary>
 public sealed class IcoWriterTests
 {
@@ -24,7 +24,7 @@ public sealed class IcoWriterTests
     }
 
     [Fact]
-    public void Write_ProduitUnEnTeteIconDirValide()
+    public void Write_produces_a_valid_ICONDIR_header()
     {
         byte[] ico = Write(Dib(16), Dib(32));
 
@@ -34,7 +34,7 @@ public sealed class IcoWriterTests
     }
 
     [Fact]
-    public void Write_PlaceDesOffsetsCoherents()
+    public void Write_places_consistent_offsets()
     {
         IcoFrame first = Dib(16);
         IcoFrame second = Dib(32);
@@ -53,9 +53,9 @@ public sealed class IcoWriterTests
     }
 
     [Fact]
-    public void Write_Encode256CommeUneLargeurNulle()
+    public void Write_encodes_256_pixels_as_zero256CommeUneLargeurNulle()
     {
-        // Le champ de dimension ne fait qu'un octet : 256 s'y code par 0.
+        // The dimension field is a single byte: 256 is encoded there as 0.
         byte[] ico = Write(Dib(256));
 
         Assert.Equal(0, ico[6]);
@@ -63,7 +63,7 @@ public sealed class IcoWriterTests
     }
 
     [Fact]
-    public void Write_ConserveLesOctetsPngTelsQuels()
+    public void Write_keeps_the_PNG_bytes_as_they_are()
     {
         byte[] png = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x01, 0x02];
         var frame = new IcoFrame(256, 256, png, IsPng: true);
@@ -74,11 +74,11 @@ public sealed class IcoWriterTests
     }
 
     [Fact]
-    public void Write_RefuseUneListeVide()
+    public void Write_refuses_an_empty_list()
         => Assert.Throws<ArgumentException>(() => Write());
 
     [Fact]
-    public void Write_RefuseUneTrameHorsLimites()
+    public void Write_refuses_an_out_of_range_frame()
     {
         var frame = new IcoFrame(512, 512, [1, 2, 3], IsPng: true);
 
@@ -86,7 +86,7 @@ public sealed class IcoWriterTests
     }
 
     [Fact]
-    public void Write_RefuseUneTrameVide()
+    public void Write_refuses_an_empty_frame()
     {
         var frame = new IcoFrame(32, 32, [], IsPng: false);
 
@@ -94,7 +94,7 @@ public sealed class IcoWriterTests
     }
 
     [Fact]
-    public void IconSizes_CouvreDuDetailALaTresGrandeIcone()
+    public void IconSizes_covers_Details_through_Extra_large_icons()
     {
         Assert.Contains(16, IconSizes.All);
         Assert.Contains(256, IconSizes.All);
@@ -104,12 +104,12 @@ public sealed class IcoWriterTests
 }
 
 /// <summary>
-/// Verifie la construction des trames DIB : en-tete, ordre des lignes et masque AND.
+/// Checks how DIB frames are built: header, row order and AND mask.
 /// </summary>
 public sealed class DibFrameBuilderTests
 {
     [Fact]
-    public void Build_DeclareUneHauteurDoubleeEtDu32Bits()
+    public void Build_declares_a_doubled_height_and_32_bits32Bits()
     {
         byte[] pixels = new byte[4 * 4 * 4];
 
@@ -122,9 +122,9 @@ public sealed class DibFrameBuilderTests
     }
 
     [Fact]
-    public void Build_InverseLOrdreDesLignes()
+    public void Build_reverses_the_row_order()
     {
-        // 2x2, premiere ligne rouge opaque, seconde ligne verte opaque.
+        // 2x2, first row opaque red, second row opaque green.
         byte[] pixels =
         [
             0, 0, 255, 255,  0, 0, 255, 255,
@@ -133,15 +133,15 @@ public sealed class DibFrameBuilderTests
 
         byte[] dib = DibFrameBuilder.Build(pixels, 2, 2);
 
-        // Le DIB se lit de bas en haut : la premiere ligne stockee est la derniere de l'image.
+        // A DIB reads bottom-up: the first row stored is the image's last.
         Assert.Equal(255, dib[40 + 1]);
         Assert.Equal(0, dib[40 + 2]);
     }
 
     [Fact]
-    public void Build_MarqueLesPixelsTransparentsDansLeMasqueAnd()
+    public void Build_marks_transparent_pixels_in_the_AND_mask()
     {
-        // 8x1 : le premier pixel est transparent, les autres opaques.
+        // 8x1: the first pixel is transparent, the others opaque.
         byte[] pixels = new byte[8 * 4];
         for (int x = 1; x < 8; x++)
         {
@@ -155,22 +155,22 @@ public sealed class DibFrameBuilderTests
     }
 
     [Fact]
-    public void Build_AligneLesLignesDuMasqueSurQuatreOctets()
+    public void Build_aligns_the_mask_rows_on_four_bytes()
     {
         byte[] pixels = new byte[16 * 16 * 4];
 
         byte[] dib = DibFrameBuilder.Build(pixels, 16, 16);
 
-        // 16 bits par ligne = 2 octets, completes a 4.
+        // 16 bits per row = 2 bytes, padded to 4.
         int expected = 40 + (16 * 16 * 4) + (4 * 16);
         Assert.Equal(expected, dib.Length);
     }
 
     [Fact]
-    public void Build_RefuseUnTamponIncoherent()
+    public void Build_refuses_an_inconsistent_buffer()
         => Assert.Throws<ArgumentException>(() => DibFrameBuilder.Build(new byte[10], 4, 4));
 
     [Fact]
-    public void Build_RefuseUneTailleHorsLimites()
+    public void Build_refuses_an_out_of_range_size()
         => Assert.Throws<ArgumentOutOfRangeException>(() => DibFrameBuilder.Build(new byte[4], 0, 1));
 }

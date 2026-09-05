@@ -13,7 +13,7 @@
     <InvariantGlobalization>false</InvariantGlobalization>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
-    <NeutralLanguage>fr-FR</NeutralLanguage>
+    <NeutralLanguage>en-US</NeutralLanguage>
   </PropertyGroup>
 
   <!-- TreatWarningsAsErrors uniquement sur Core et Shell (CLAUDE.md §7). -->

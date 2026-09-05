@@ -3,35 +3,35 @@ using System.Text;
 namespace FolderHue.Core.Folders;
 
 /// <summary>
-/// Modele d'un fichier <c>desktop.ini</c> preservant l'ordre, les commentaires et la mise en forme.
+/// Model of a <c>desktop.ini</c> file, preserving order, comments and formatting.
 /// </summary>
 /// <remarks>
-/// Beaucoup de dossiers ont deja un <c>desktop.ini</c> portant <c>FolderType</c>,
-/// <c>LocalizedResourceName</c> ou une vue personnalisee. On <b>fusionne</b>, jamais on n'ecrase
-/// (CLAUDE.md §6.1). D'ou ce modele fonde sur les lignes plutot que sur un dictionnaire : tout ce
-/// que nous ne modifions pas est restitue tel quel.
+/// Many folders already have a <c>desktop.ini</c> carrying <c>FolderType</c>,
+/// <c>LocalizedResourceName</c> or a custom view. We <b>merge</b>, we never overwrite
+/// (CLAUDE.md 6.1). Hence a line-based model rather than a dictionary: everything we do not
+/// change is written back exactly as it was.
 /// </remarks>
 public sealed class DesktopIni
 {
-    /// <summary>Section standard portant la personnalisation d'icone.</summary>
+    /// <summary>Standard section carrying the icon customisation.</summary>
     public const string ShellClassInfoSection = ".ShellClassInfo";
 
-    /// <summary>Cle designant l'icone du dossier.</summary>
+    /// <summary>Key naming the folder icon.</summary>
     public const string IconResourceKey = "IconResource";
 
     private readonly List<Line> _lines;
 
     private DesktopIni(List<Line> lines) => _lines = lines;
 
-    /// <summary>Cree un fichier vide.</summary>
+    /// <summary>Creates an empty file.</summary>
     public DesktopIni()
         : this([])
     {
     }
 
-    /// <summary>Analyse le contenu textuel d'un <c>desktop.ini</c>.</summary>
-    /// <param name="text">Le contenu du fichier. <see langword="null"/> est traite comme vide.</param>
-    /// <returns>Le modele correspondant.</returns>
+    /// <summary>Parses the textual content of a <c>desktop.ini</c>.</summary>
+    /// <param name="text">The file content. <see langword="null"/> is treated as empty.</param>
+    /// <returns>The matching model.</returns>
     public static DesktopIni Parse(string? text)
     {
         var lines = new List<Line>();
@@ -75,7 +75,7 @@ public sealed class DesktopIni
         return new DesktopIni(lines);
     }
 
-    /// <summary>Indique si le fichier ne contient aucune section ni aucune cle.</summary>
+    /// <summary>Indicates whether the file holds no section and no key at all.</summary>
     public bool IsEmpty
     {
         get
@@ -92,10 +92,10 @@ public sealed class DesktopIni
         }
     }
 
-    /// <summary>Lit une valeur.</summary>
-    /// <param name="section">Nom de la section, sans crochets.</param>
-    /// <param name="key">Nom de la cle.</param>
-    /// <returns>La valeur, ou <see langword="null"/> si la cle est absente.</returns>
+    /// <summary>Reads a value.</summary>
+    /// <param name="section">Section name, without brackets.</param>
+    /// <param name="key">Key name.</param>
+    /// <returns>The value, or <see langword="null"/> when the key is absent.</returns>
     public string? GetValue(string section, string key)
     {
         ArgumentException.ThrowIfNullOrEmpty(section);
@@ -113,15 +113,15 @@ public sealed class DesktopIni
     }
 
     /// <summary>
-    /// Ecrit une valeur, en creant la section ou la cle si necessaire.
+    /// Writes a value, creating the section or the key when needed.
     /// </summary>
-    /// <param name="section">Nom de la section, sans crochets.</param>
-    /// <param name="key">Nom de la cle.</param>
-    /// <param name="value">La valeur a ecrire.</param>
+    /// <param name="section">Section name, without brackets.</param>
+    /// <param name="key">Key name.</param>
+    /// <param name="value">The value to write.</param>
     /// <remarks>
-    /// Si la cle existe deja, seule sa valeur change : sa casse d'origine et sa position dans le
-    /// fichier sont conservees. Sinon la cle est ajoutee a la fin de sa section, et la section est
-    /// creee en fin de fichier si elle n'existe pas.
+    /// When the key already exists only its value changes: its original casing and its position in
+    /// the file are preserved. Otherwise the key is appended to the end of its section, and the
+    /// section is created at the end of the file when it does not exist.
     /// </remarks>
     public void SetValue(string section, string key, string value)
     {
@@ -155,10 +155,10 @@ public sealed class DesktopIni
         _lines.Insert(insertAt, Line.MakeKeyValue(key + "=" + value, section, key, value));
     }
 
-    /// <summary>Supprime une cle.</summary>
-    /// <param name="section">Nom de la section, sans crochets.</param>
-    /// <param name="key">Nom de la cle.</param>
-    /// <returns><see langword="true"/> si la cle existait.</returns>
+    /// <summary>Removes a key.</summary>
+    /// <param name="section">Section name, without brackets.</param>
+    /// <param name="key">Key name.</param>
+    /// <returns><see langword="true"/> when the key existed.</returns>
     public bool RemoveValue(string section, string key)
     {
         ArgumentException.ThrowIfNullOrEmpty(section);
@@ -176,9 +176,9 @@ public sealed class DesktopIni
         return false;
     }
 
-    /// <summary>Supprime une section si elle ne contient plus aucune cle.</summary>
-    /// <param name="section">Nom de la section, sans crochets.</param>
-    /// <returns><see langword="true"/> si la section a ete supprimee.</returns>
+    /// <summary>Removes a section when it no longer holds any key.</summary>
+    /// <param name="section">Section name, without brackets.</param>
+    /// <returns><see langword="true"/> when the section was removed.</returns>
     public bool RemoveSectionIfEmpty(string section)
     {
         ArgumentException.ThrowIfNullOrEmpty(section);
@@ -211,16 +211,16 @@ public sealed class DesktopIni
     }
 
     /// <summary>
-    /// Indique si toutes les cles du fichier nous appartiennent.
+    /// Indicates whether every key in the file belongs to us.
     /// </summary>
-    /// <param name="ownedKeys">Les couples section / cle que nous ecrivons.</param>
+    /// <param name="ownedKeys">The section / key pairs we write.</param>
     /// <returns>
-    /// <see langword="true"/> si le fichier ne contient aucune cle etrangere. Un fichier sans
-    /// aucune cle retourne <see langword="true"/>.
+    /// <see langword="true"/> when the file holds no foreign key. A file with no key at all
+    /// returns <see langword="true"/>.
     /// </returns>
     /// <remarks>
-    /// C'est ce test qui autorise la suppression complete de <c>desktop.ini</c> lors d'une
-    /// reinitialisation. Sinon le fichier est conserve, allege de nos seules cles (CLAUDE.md §6.3).
+    /// This test is what allows deleting <c>desktop.ini</c> outright on a reset. Otherwise the
+    /// file is kept, lightened of our keys only (CLAUDE.md 6.3).
     /// </remarks>
     public bool ContainsOnlyKeys(IReadOnlyCollection<(string Section, string Key)> ownedKeys)
     {
@@ -252,11 +252,11 @@ public sealed class DesktopIni
         return true;
     }
 
-    /// <summary>Restitue le contenu textuel du fichier.</summary>
-    /// <returns>Le texte complet, lignes separees par CRLF.</returns>
+    /// <summary>Renders the file back to text.</summary>
+    /// <returns>The complete text, lines separated by CRLF.</returns>
     /// <remarks>
-    /// CRLF et non LF : <c>desktop.ini</c> est lu par des API Win32 historiques qui s'accommodent
-    /// mal des fins de ligne Unix.
+    /// CRLF and not LF: <c>desktop.ini</c> is read by legacy Win32 APIs that cope badly with Unix
+    /// line endings.
     /// </remarks>
     public string ToText()
     {
@@ -305,8 +305,8 @@ public sealed class DesktopIni
 
     private static IEnumerable<string> SplitLines(string text)
     {
-        // Les fichiers rencontres melangent parfois CRLF et LF : on decoupe a la main plutot que
-        // de se fier a un separateur unique.
+        // Files found in the wild sometimes mix CRLF and LF: split by hand rather than trusting a
+        // single separator.
         int start = 0;
 
         for (int i = 0; i < text.Length; i++)

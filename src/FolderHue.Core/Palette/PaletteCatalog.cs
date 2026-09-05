@@ -1,16 +1,17 @@
 namespace FolderHue.Core.Palette;
 
 /// <summary>
-/// Source unique de verite de la palette : couleurs, emblemes et nommage des icones generees.
+/// Single source of truth for the palette: colors, emblems, and the naming of generated icons.
 /// </summary>
 /// <remarks>
-/// Ce catalogue est partage par <c>FolderHue.Shell</c> (libelles et verbes du menu) et par
-/// <c>FolderHue.App</c> (pre-generation des <c>.ico</c>). Il est volontairement statique et
-/// sans acces disque : <c>GetTitle</c> et <c>GetIcon</c> sont appeles a chaque ouverture du menu
-/// contextuel, dans le processus <c>explorer.exe</c> (CLAUDE.md §4.4).
+/// This catalogue is shared by <c>FolderHue.Shell</c> (menu labels and verbs) and by
+/// <c>FolderHue.App</c> (pre-generating the <c>.ico</c> files). It is deliberately static and
+/// touches no disk: <c>GetTitle</c> and <c>GetIcon</c> are called every time the context menu
+/// opens, inside the <c>explorer.exe</c> process (CLAUDE.md 4.4).
 /// <para>
-/// Le menu comporte 12 couleurs + « Embleme » + « Reinitialiser » = 14 elements, sous la limite
-/// de 16 elements par handler.
+/// The submenu holds 12 colors + "Original color" + a separator + "Emblem" + "Reset color" =
+/// <b>exactly 16</b> items, which is the documented ceiling. There is no headroom left: any new
+/// entry means removing another one or nesting further (CLAUDE.md 4.4).
 /// </para>
 /// </remarks>
 public static class PaletteCatalog
@@ -18,7 +19,7 @@ public static class PaletteCatalog
     private const float DefaultSaturationScale = 1.15f;
     private const float DefaultSaturationFloor = 0.55f;
 
-    /// <summary>Les 12 teintes proposees dans le menu contextuel, dans l'ordre d'affichage.</summary>
+    /// <summary>The 12 hues offered in the context menu, in display order.</summary>
     public static IReadOnlyList<FolderColor> Colors { get; } =
     [
         new("red",      "Color_Red",      358f, DefaultSaturationScale, DefaultSaturationFloor, 0f),
@@ -36,7 +37,7 @@ public static class PaletteCatalog
     ];
 
     /// <summary>
-    /// Les etats d'embleme proposes, <see cref="Emblem.None"/> compris et place en tete.
+    /// The emblem states offered, <see cref="Emblem.None"/> included and listed first.
     /// </summary>
     public static IReadOnlyList<Emblem> Emblems { get; } =
     [
@@ -49,31 +50,31 @@ public static class PaletteCatalog
     ];
 
     /// <summary>
-    /// Entree hors palette designant « la couleur d'origine du dossier ».
+    /// The entry standing for "the folder's original color".
     /// </summary>
     /// <remarks>
-    /// Elle n'apparait pas dans le menu : c'est la couleur de repli quand l'utilisateur pose un
-    /// embleme sur un dossier jamais colorise. Sans elle, le code retombait sur la premiere teinte
-    /// de la palette et le dossier virait au rouge au passage — poser un marqueur ne doit pas
-    /// decider d'une couleur a la place de l'utilisateur.
+    /// It appears at the end of the palette, labelled "Original color", and it is also the
+    /// fallback used when the user puts an emblem on a folder that was never colored. Without it
+    /// the code fell back to the first hue of the palette and the folder turned red along the way
+    /// — placing a status marker must not decide a color on the user's behalf.
     /// </remarks>
     public static FolderColor Neutral { get; } =
         new("neutral", "Color_Neutral", FolderColor.NoHue, 1f, 0f, 0f);
 
     /// <summary>
-    /// Toutes les entrees pour lesquelles une icone doit etre pre-generee.
+    /// Every entry an icon must be pre-generated for.
     /// </summary>
     /// <remarks>
-    /// La palette du menu, plus <see cref="Neutral"/> : <c>neutral.ico</c> est l'icone de dossier
-    /// d'origine, et <c>neutral+done.ico</c> cette meme icone portant un embleme.
+    /// The menu palette plus <see cref="Neutral"/>: <c>neutral.ico</c> is the original folder icon,
+    /// and <c>neutral+done.ico</c> that same icon carrying an emblem.
     /// </remarks>
     public static IReadOnlyList<FolderColor> TintableColors { get; } = [.. Colors, Neutral];
 
-    /// <summary>Nombre d'icones distinctes que la pre-generation doit produire.</summary>
+    /// <summary>How many distinct icons the pre-generation must produce.</summary>
     public static int IconCombinationCount => TintableColors.Count * Emblems.Count;
 
-    /// <summary>Retourne la couleur portant cet identifiant, ou <see langword="null"/> si inconnue.</summary>
-    /// <param name="id">Identifiant stable de la couleur, comparaison insensible a la casse.</param>
+    /// <summary>Returns the color with that identifier, or <see langword="null"/> when unknown.</summary>
+    /// <param name="id">Stable color identifier, compared case-insensitively.</param>
     public static FolderColor? FindColor(string? id)
     {
         if (string.IsNullOrEmpty(id))
@@ -92,10 +93,10 @@ public static class PaletteCatalog
         return null;
     }
 
-    /// <summary>Retourne l'embleme portant cet identifiant, ou <see langword="null"/> si inconnu.</summary>
+    /// <summary>Returns the emblem with that identifier, or <see langword="null"/> when unknown.</summary>
     /// <param name="id">
-    /// Identifiant stable de l'embleme. <see langword="null"/> ou vide est traite comme
-    /// <see cref="Emblem.None"/>, ce qui simplifie l'appel depuis le shell.
+    /// Stable emblem identifier. <see langword="null"/> or empty is treated as
+    /// <see cref="Emblem.None"/>, which keeps the call site in the shell simple.
     /// </param>
     public static Emblem? FindEmblem(string? id)
     {
@@ -116,16 +117,15 @@ public static class PaletteCatalog
     }
 
     /// <summary>
-    /// Nom du fichier <c>.ico</c> de la puce d'un embleme.
+    /// File name of the <c>.ico</c> holding an emblem's menu chip.
     /// </summary>
-    /// <param name="emblemId">Identifiant de l'embleme, <see cref="Emblem.NoneId"/> compris.</param>
-    /// <returns>Un nom de fichier, sans chemin, par exemple <c>emblem-done.ico</c>.</returns>
+    /// <param name="emblemId">Emblem identifier, <see cref="Emblem.NoneId"/> included.</param>
+    /// <returns>A file name, without a path, for instance <c>emblem-done.ico</c>.</returns>
     /// <remarks>
-    /// La pastille seule, dessinee en grand. Compositee sur un dossier elle ne fait que 40 % de
-    /// l'icone, soit six pixels dans un menu : illisible. La puce du menu la dessine donc pleine
-    /// taille.
+    /// The badge on its own, drawn large. Composited onto a folder it is only 40% of the icon,
+    /// which is six pixels in a menu: illegible. The menu chip therefore draws it full size.
     /// </remarks>
-    /// <exception cref="ArgumentException"><paramref name="emblemId"/> est vide.</exception>
+    /// <exception cref="ArgumentException"><paramref name="emblemId"/> is empty.</exception>
     public static string EmblemChipFileName(string emblemId)
     {
         ArgumentException.ThrowIfNullOrEmpty(emblemId);
@@ -133,25 +133,25 @@ public static class PaletteCatalog
     }
 
     /// <summary>
-    /// Nom du fichier <c>.ico</c> du logo de l'application, aux couleurs de la marque.
+    /// File name of the <c>.ico</c> holding the application logo, in the brand colors.
     /// </summary>
     /// <remarks>
-    /// C'est l'icone de l'entree racine du menu contextuel. Elle vit a cote de la palette, dans
-    /// <c>%LOCALAPPDATA%\FolderHue\icons</c>, et est pre-generee au meme moment.
+    /// This is the icon of the context menu's root entry. It lives next to the palette, in
+    /// <c>%LOCALAPPDATA%\FolderHue\icons</c>, and is pre-generated at the same time.
     /// </remarks>
     public const string BrandLogoFileName = "logo.ico";
 
     /// <summary>
-    /// Nom du fichier <c>.ico</c> de la declinaison du logo dans une teinte de la palette.
+    /// File name of the <c>.ico</c> holding the logo tinted with one palette color.
     /// </summary>
-    /// <param name="colorId">Identifiant de la couleur, par exemple <c>"blue"</c>.</param>
-    /// <returns>Un nom de fichier, sans chemin, par exemple <c>logo-blue.ico</c>.</returns>
+    /// <param name="colorId">Color identifier, for instance <c>"blue"</c>.</param>
+    /// <returns>A file name, without a path, for instance <c>logo-blue.ico</c>.</returns>
     /// <remarks>
-    /// Ces declinaisons servent de puces devant chaque couleur du menu contextuel. Elles
-    /// subissent exactement la meme transformation HSL que l'icone de dossier correspondante :
-    /// la puce et le resultat sur le dossier ne peuvent donc pas diverger.
+    /// These tints are the chips shown in front of each color in the context menu. They go through
+    /// exactly the same HSL transformation as the matching folder icon, so the chip and the result
+    /// on the folder cannot drift apart.
     /// </remarks>
-    /// <exception cref="ArgumentException"><paramref name="colorId"/> est vide.</exception>
+    /// <exception cref="ArgumentException"><paramref name="colorId"/> is empty.</exception>
     public static string LogoFileName(string colorId)
     {
         ArgumentException.ThrowIfNullOrEmpty(colorId);
@@ -159,14 +159,14 @@ public static class PaletteCatalog
     }
 
     /// <summary>
-    /// Nom du fichier <c>.ico</c> correspondant a une combinaison couleur + embleme.
+    /// File name of the <c>.ico</c> matching a color + emblem pair.
     /// </summary>
-    /// <param name="colorId">Identifiant de la couleur, par exemple <c>"blue"</c>.</param>
+    /// <param name="colorId">Color identifier, for instance <c>"blue"</c>.</param>
     /// <param name="emblemId">
-    /// Identifiant de l'embleme. <c>"none"</c>, <see langword="null"/> ou vide produisent
-    /// <c>blue.ico</c> ; sinon <c>blue+important.ico</c>.
+    /// Emblem identifier. <c>"none"</c>, <see langword="null"/> or empty produce <c>blue.ico</c>;
+    /// anything else produces <c>blue+important.ico</c>.
     /// </param>
-    /// <returns>Un nom de fichier, sans chemin.</returns>
+    /// <returns>A file name, without a path.</returns>
     public static string IconFileName(string colorId, string? emblemId)
     {
         ArgumentException.ThrowIfNullOrEmpty(colorId);

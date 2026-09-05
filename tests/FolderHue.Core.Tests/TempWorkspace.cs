@@ -3,11 +3,11 @@ using FolderHue.Core.Storage;
 namespace FolderHue.Core.Tests;
 
 /// <summary>
-/// Un espace de travail jetable : un dossier temporaire supprime a la fin du test.
+/// A disposable workspace: a temporary directory deleted when the test ends.
 /// </summary>
 /// <remarks>
-/// CLAUDE.md §8 interdit aux tests de toucher un vrai dossier utilisateur. Tout passe donc par
-/// cette classe, y compris la racine applicative simulee.
+/// CLAUDE.md 8 forbids tests from touching a real user folder. Everything therefore goes through
+/// this class, the simulated application root included.
 /// </remarks>
 internal sealed class TempWorkspace : IDisposable
 {
@@ -22,10 +22,10 @@ internal sealed class TempWorkspace : IDisposable
         AppPaths.EnsureDirectories();
     }
 
-    /// <summary>Racine applicative simulee, sous le dossier temporaire.</summary>
+    /// <summary>Simulated application root, under the temporary directory.</summary>
     internal AppPaths AppPaths { get; }
 
-    /// <summary>Cree un sous-dossier de travail et retourne son chemin absolu.</summary>
+    /// <summary>Creates a working subfolder and returns its absolute path.</summary>
     internal string CreateFolder(string name)
     {
         string path = Path.Combine(_root, "work", name);
@@ -33,7 +33,7 @@ internal sealed class TempWorkspace : IDisposable
         return path;
     }
 
-    /// <summary>Cree un fichier d'icone factice pour une combinaison couleur + embleme.</summary>
+    /// <summary>Creates a dummy icon file for one color + emblem pair.</summary>
     internal string CreateFakeIcon(string colorId, string? emblemId = null)
     {
         string path = AppPaths.IconPath(colorId, emblemId);
@@ -50,7 +50,7 @@ internal sealed class TempWorkspace : IDisposable
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            // Un dossier temporaire residuel ne doit pas faire echouer un test.
+            // A leftover temporary directory must not fail a test.
         }
     }
 
@@ -62,8 +62,8 @@ internal sealed class TempWorkspace : IDisposable
             return;
         }
 
-        // Les dossiers colorises portent ReadOnly et leurs desktop.ini sont caches + systeme :
-        // sans ce nettoyage, la suppression recursive echoue.
+        // Colored folders carry ReadOnly and their desktop.ini files are hidden + system:
+        // without this cleanup the recursive delete fails.
         foreach (FileSystemInfo entry in directory.EnumerateFileSystemInfos("*", SearchOption.AllDirectories))
         {
             if (entry is DirectoryInfo && (entry.Attributes & FileAttributes.ReparsePoint) != 0)

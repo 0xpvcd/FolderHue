@@ -4,15 +4,15 @@ using System.Resources;
 namespace FolderHue.Core.Resources;
 
 /// <summary>
-/// Acces aux chaines localisees du projet.
+/// Access to the project's localised strings.
 /// </summary>
 /// <remarks>
-/// Toutes les chaines affichees a l'utilisateur passent par ici, y compris les titres du menu
-/// contextuel : aucun litteral en dur dans l'UI ni dans <c>GetTitle()</c> (CLAUDE.md §7).
+/// Every string shown to the user goes through here, context menu titles included: no hard-coded
+/// literal in the UI, and none in <c>GetTitle()</c> (CLAUDE.md 7).
 /// <para>
-/// Cette indirection tres mince a une raison d'etre : si les assemblys satellites posaient
-/// probleme a la compilation NativeAOT du shell, seule l'implementation de <see cref="Get"/>
-/// changerait, pas ses centaines d'appelants.
+/// English is the neutral language, embedded in the assembly itself; other languages ship as
+/// satellites. Both survive NativeAOT compilation, so the menu follows the Windows display
+/// language just as the settings window does.
 /// </para>
 /// </remarks>
 public static class Loc
@@ -20,12 +20,11 @@ public static class Loc
     private static readonly ResourceManager Manager =
         new("FolderHue.Core.Resources.Strings", typeof(Loc).Assembly);
 
-    /// <summary>Retourne la chaine associee a une cle.</summary>
-    /// <param name="key">Nom de la ressource, par exemple <c>Menu_Root</c>.</param>
+    /// <summary>Returns the string bound to a key.</summary>
+    /// <param name="key">Resource name, for instance <c>Menu_Root</c>.</param>
     /// <returns>
-    /// La chaine dans la culture d'interface courante. Si la cle est introuvable, la cle
-    /// elle-meme est retournee : un libelle bizarre vaut mieux qu'une exception dans
-    /// <c>explorer.exe</c>.
+    /// The string in the current UI culture. When the key is missing, the key itself is returned:
+    /// an odd-looking label beats an exception inside <c>explorer.exe</c>.
     /// </returns>
     public static string Get(string key)
     {
@@ -44,10 +43,10 @@ public static class Loc
         }
     }
 
-    /// <summary>Retourne une chaine formatee.</summary>
-    /// <param name="key">Nom de la ressource, dont la valeur contient des jalons <c>{0}</c>.</param>
-    /// <param name="arguments">Les valeurs a injecter.</param>
-    /// <returns>La chaine formatee dans la culture d'interface courante.</returns>
+    /// <summary>Returns a formatted string.</summary>
+    /// <param name="key">Resource name whose value contains <c>{0}</c> placeholders.</param>
+    /// <param name="arguments">The values to inject.</param>
+    /// <returns>The formatted string in the current UI culture.</returns>
     public static string Format(string key, params object?[] arguments)
     {
         string template = Get(key);

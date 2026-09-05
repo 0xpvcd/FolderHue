@@ -4,8 +4,8 @@ using Xunit;
 namespace FolderHue.Core.Tests;
 
 /// <summary>
-/// Verifie la regle la plus sensible du projet : fusionner un <c>desktop.ini</c> existant sans
-/// jamais l'ecraser (CLAUDE.md §6.1).
+/// Checks the project's most delicate rule: merge an existing <c>desktop.ini</c> without ever
+/// overwriting it (CLAUDE.md 6.1).
 /// </summary>
 public sealed class DesktopIniTests
 {
@@ -24,7 +24,7 @@ public sealed class DesktopIniTests
         [(DesktopIni.ShellClassInfoSection, DesktopIni.IconResourceKey)];
 
     [Fact]
-    public void SetValue_PreserveLesClesExistantes()
+    public void SetValue_preserves_existing_keys()
     {
         DesktopIni ini = DesktopIni.Parse(Existing);
 
@@ -38,7 +38,7 @@ public sealed class DesktopIniTests
     }
 
     [Fact]
-    public void SetValue_AjouteLaCleDansLaBonneSection()
+    public void SetValue_adds_the_key_to_the_right_section()
     {
         DesktopIni ini = DesktopIni.Parse(Existing);
 
@@ -53,7 +53,7 @@ public sealed class DesktopIniTests
     }
 
     [Fact]
-    public void SetValue_CreeLaSectionQuandElleManque()
+    public void SetValue_creates_the_section_when_it_is_missing()
     {
         var ini = new DesktopIni();
 
@@ -64,7 +64,7 @@ public sealed class DesktopIniTests
     }
 
     [Fact]
-    public void SetValue_RemplaceSansDupliquer()
+    public void SetValue_replaces_without_duplicating()
     {
         DesktopIni ini = DesktopIni.Parse("[.ShellClassInfo]\r\nIconResource=old.ico,0\r\n");
 
@@ -75,7 +75,7 @@ public sealed class DesktopIniTests
     }
 
     [Fact]
-    public void GetValue_IgnoreLaCasseDesNoms()
+    public void GetValue_ignores_the_case_of_names()
     {
         DesktopIni ini = DesktopIni.Parse("[.shellclassinfo]\r\niconresource=a.ico,0\r\n");
 
@@ -83,7 +83,7 @@ public sealed class DesktopIniTests
     }
 
     [Fact]
-    public void Parse_ConserveLesCommentaires()
+    public void Parse_preserves_comments()
     {
         const string text = "; commentaire de l'utilisateur\r\n[.ShellClassInfo]\r\nFolderType=Generic\r\n";
 
@@ -93,7 +93,7 @@ public sealed class DesktopIniTests
     }
 
     [Fact]
-    public void Parse_AccepteLesFinsDeLigneUnix()
+    public void Parse_accepts_Unix_line_endings()
     {
         DesktopIni ini = DesktopIni.Parse("[.ShellClassInfo]\nIconResource=a.ico,0\n");
 
@@ -101,7 +101,7 @@ public sealed class DesktopIniTests
     }
 
     [Fact]
-    public void RemoveValue_RetireLaCle()
+    public void RemoveValue_takes_the_key_out()
     {
         DesktopIni ini = DesktopIni.Parse("[.ShellClassInfo]\r\nIconResource=a.ico,0\r\nFolderType=Generic\r\n");
 
@@ -112,7 +112,7 @@ public sealed class DesktopIniTests
     }
 
     [Fact]
-    public void RemoveSectionIfEmpty_NeSupprimePasUneSectionHabitee()
+    public void RemoveSectionIfEmpty_keeps_a_populated_section()
     {
         DesktopIni ini = DesktopIni.Parse("[.ShellClassInfo]\r\nFolderType=Generic\r\n");
 
@@ -120,7 +120,7 @@ public sealed class DesktopIniTests
     }
 
     [Fact]
-    public void RemoveSectionIfEmpty_SupprimeUneSectionVidee()
+    public void RemoveSectionIfEmpty_deletes_an_emptied_section()
     {
         DesktopIni ini = DesktopIni.Parse("[.ShellClassInfo]\r\nIconResource=a.ico,0\r\n");
         ini.RemoveValue(DesktopIni.ShellClassInfoSection, DesktopIni.IconResourceKey);
@@ -130,7 +130,7 @@ public sealed class DesktopIniTests
     }
 
     [Fact]
-    public void ContainsOnlyKeys_DetecteUneCleEtrangere()
+    public void ContainsOnlyKeys_detects_a_foreign_key()
     {
         DesktopIni ini = DesktopIni.Parse(Existing);
 
@@ -138,7 +138,7 @@ public sealed class DesktopIniTests
     }
 
     [Fact]
-    public void ContainsOnlyKeys_AccepteUnFichierNeContenantQueLesNotres()
+    public void ContainsOnlyKeys_accepts_a_file_holding_only_ours()
     {
         DesktopIni ini = DesktopIni.Parse("[.ShellClassInfo]\r\nIconResource=a.ico,0\r\n");
 
@@ -146,7 +146,7 @@ public sealed class DesktopIniTests
     }
 
     [Fact]
-    public void ToText_TermineChaqueLigneParCrLf()
+    public void ToText_ends_every_line_with_CRLF()
     {
         DesktopIni ini = DesktopIni.Parse("[.ShellClassInfo]\nIconResource=a.ico,0\n");
 
