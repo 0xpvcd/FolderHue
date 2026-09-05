@@ -1,33 +1,48 @@
 namespace FolderHue.Core.Storage;
 
 /// <summary>
-/// Resout les emplacements de travail de l'application sous <c>%LOCALAPPDATA%\FolderHue</c>.
+/// Resolves the application's working locations under <c>%LOCALAPPDATA%\FolderHue</c>.
 /// </summary>
 /// <remarks>
-/// C'est le seul endroit du systeme de fichiers ou l'application ecrit, en dehors des dossiers que
-/// l'utilisateur selectionne explicitement (CLAUDE.md §11).
+/// This is the only place in the file system the application writes to, apart from the folders the
+/// user explicitly selects (CLAUDE.md 11).
 /// <para>
-/// La classe est instanciable pour que les tests puissent travailler dans un dossier temporaire
-/// jetable plutot que dans le profil reel (CLAUDE.md §8).
+/// The class is instantiable so that tests can work in a disposable temporary directory rather
+/// than in the real profile (CLAUDE.md 8).
 /// </para>
 /// </remarks>
 public sealed class AppPaths
 {
-    /// <summary>Nom du dossier applicatif sous <c>%LOCALAPPDATA%</c>.</summary>
+    /// <summary>Name of the application folder under <c>%LOCALAPPDATA%</c>.</summary>
     public const string FolderName = "FolderHue";
 
     /// <summary>
-    /// Variable d'environnement permettant de forcer la racine, utilisee par les tests.
+    /// Environment variable that forces the root, used by the tests.
     /// </summary>
     public const string RootEnvironmentVariable = "FOLDERHUE_ROOT";
 
-    /// <summary>Cree un jeu de chemins enracine sur un dossier donne.</summary>
-    /// <param name="root">Racine, absolue. Elle n'a pas besoin d'exister.</param>
-    /// <exception cref="ArgumentException"><paramref name="root"/> est vide.</exception>
+    /// <summary>Creates a set of paths rooted at a given directory.</summary>
+    /// <param name="root">Data root, absolute. It does not need to exist.</param>
+    /// <exception cref="ArgumentException"><paramref name="root"/> is empty.</exception>
+    /// <remarks>
+    /// The install directory is derived from the running executable. The application lives wherever
+    /// the installer put it, not at an imposed location, so the executable is what tells the truth.
+    /// </remarks>
     public AppPaths(string root)
+        : this(root, AppContext.BaseDirectory)
+    {
+    }
+
+    /// <summary>Creates a set of paths, also fixing the install directory.</summary>
+    /// <param name="root">Data root, absolute. It does not need to exist.</param>
+    /// <param name="installDirectory">Directory holding the application and the shell DLL.</param>
+    /// <exception cref="ArgumentException">Either path is empty.</exception>
+    public AppPaths(string root, string installDirectory)
     {
         ArgumentException.ThrowIfNullOrEmpty(root);
+        ArgumentException.ThrowIfNullOrEmpty(installDirectory);
 
+        InstallDirectory = Path.GetFullPath(installDirectory);
         Root = Path.GetFullPath(root);
         IconsDirectory = Path.Combine(Root, "icons");
         BaseDirectory = Path.Combine(Root, "base");
@@ -38,57 +53,66 @@ public sealed class AppPaths
         LogFile = Path.Combine(LogsDirectory, "folderhue.log");
     }
 
-    /// <summary>Les chemins reels de la machine courante.</summary>
+    /// <summary>The real paths of the current machine.</summary>
     public static AppPaths Default { get; } = new(ResolveDefaultRoot());
 
-    /// <summary>Racine applicative, typiquement <c>%LOCALAPPDATA%\FolderHue</c>.</summary>
+    /// <summary>Application root, typically <c>%LOCALAPPDATA%\FolderHue</c>.</summary>
     public string Root { get; }
 
-    /// <summary>Dossier des <c>.ico</c> pre-generes, un par combinaison couleur + embleme.</summary>
+    /// <summary>
+    /// Directory where the installer placed the application and <c>FolderHue.Shell.dll</c>.
+    /// </summary>
+    /// <remarks>
+    /// Typically <c>%LOCALAPPDATA%\Programs\FolderHue</c>, but the user may pick another one: the
+    /// value is derived from the running executable, never assumed.
+    /// </remarks>
+    public string InstallDirectory { get; }
+
+    /// <summary>Directory of pre-generated <c>.ico</c> files, one per color + emblem pair.</summary>
     public string IconsDirectory { get; }
 
-    /// <summary>Dossier du gabarit d'icone extrait du shell de la machine.</summary>
+    /// <summary>Directory of the icon template extracted from the machine's shell.</summary>
     public string BaseDirectory { get; }
 
-    /// <summary>Dossier des journaux de diagnostic.</summary>
+    /// <summary>Directory of the diagnostic logs.</summary>
     public string LogsDirectory { get; }
 
-    /// <summary>Fichier <c>applied.json</c> : la trace de ce que nous avons modifie.</summary>
+    /// <summary>The <c>applied.json</c> file: the record of what we changed.</summary>
     public string JournalFile { get; }
 
-    /// <summary>Gabarit d'icone de dossier neutre servant de base a la colorisation.</summary>
+    /// <summary>Neutral folder icon template used as the basis for coloring.</summary>
     public string BaseIconFile { get; }
 
-    /// <summary>Marqueur de version de la bibliotheque d'icones, pour eviter de la regenerer.</summary>
+    /// <summary>Version stamp of the icon library, so it is not regenerated needlessly.</summary>
     public string IconLibraryStampFile { get; }
 
-    /// <summary>Fichier de journal courant.</summary>
+    /// <summary>The current log file.</summary>
     public string LogFile { get; }
 
-    /// <summary>Chemin absolu du <c>.ico</c> d'une combinaison couleur + embleme.</summary>
-    /// <param name="colorId">Identifiant de la couleur.</param>
-    /// <param name="emblemId">Identifiant de l'embleme, ou <see langword="null"/> pour aucun.</param>
-    /// <returns>Un chemin absolu, que le fichier existe ou non.</returns>
+    /// <summary>Absolute path of the <c>.ico</c> for a color + emblem pair.</summary>
+    /// <param name="colorId">Color identifier.</param>
+    /// <param name="emblemId">Emblem identifier, or <see langword="null"/> for none.</param>
+    /// <returns>An absolute path, whether the file exists or not.</returns>
     public string IconPath(string colorId, string? emblemId)
         => Path.Combine(IconsDirectory, Palette.PaletteCatalog.IconFileName(colorId, emblemId));
 
-    /// <summary>Chemin absolu de la puce d'un embleme.</summary>
-    /// <param name="emblemId">Identifiant de l'embleme.</param>
-    /// <returns>Un chemin absolu, que le fichier existe ou non.</returns>
+    /// <summary>Absolute path of an emblem's menu chip.</summary>
+    /// <param name="emblemId">Emblem identifier.</param>
+    /// <returns>An absolute path, whether the file exists or not.</returns>
     public string EmblemChipPath(string emblemId)
         => Path.Combine(IconsDirectory, Palette.PaletteCatalog.EmblemChipFileName(emblemId));
 
-    /// <summary>Chemin absolu du logo de l'application, aux couleurs de la marque.</summary>
-    /// <returns>Un chemin absolu, que le fichier existe ou non.</returns>
+    /// <summary>Absolute path of the application logo, in the brand colors.</summary>
+    /// <returns>An absolute path, whether the file exists or not.</returns>
     public string BrandLogoPath => Path.Combine(IconsDirectory, Palette.PaletteCatalog.BrandLogoFileName);
 
-    /// <summary>Chemin absolu de la declinaison du logo dans une teinte de la palette.</summary>
-    /// <param name="colorId">Identifiant de la couleur.</param>
-    /// <returns>Un chemin absolu, que le fichier existe ou non.</returns>
+    /// <summary>Absolute path of the logo tinted with one palette color.</summary>
+    /// <param name="colorId">Color identifier.</param>
+    /// <returns>An absolute path, whether the file exists or not.</returns>
     public string LogoPath(string colorId)
         => Path.Combine(IconsDirectory, Palette.PaletteCatalog.LogoFileName(colorId));
 
-    /// <summary>Cree les dossiers de travail s'ils n'existent pas.</summary>
+    /// <summary>Creates the working directories when they do not exist.</summary>
     public void EnsureDirectories()
     {
         Directory.CreateDirectory(Root);
@@ -98,12 +122,17 @@ public sealed class AppPaths
     }
 
     /// <summary>
-    /// Indique si un chemin se trouve sous la racine applicative.
+    /// Indicates whether a path belongs to FolderHue itself.
     /// </summary>
-    /// <param name="path">Chemin a tester, absolu ou relatif.</param>
-    /// <returns><see langword="true"/> si le chemin est la racine ou se trouve dessous.</returns>
+    /// <param name="path">Path to test, absolute or relative.</param>
+    /// <returns>
+    /// <see langword="true"/> when the path is, or sits under, the data root or the install
+    /// directory.
+    /// </returns>
     /// <remarks>
-    /// Sert a interdire la colorisation de nos propres dossiers de travail (CLAUDE.md §6.2).
+    /// Used to forbid coloring our own directories (CLAUDE.md 6.2). The install directory counts
+    /// just as much as the data one: dropping a <c>desktop.ini</c> and a read-only attribute in
+    /// there would get in the way of uninstalling, for nothing.
     /// </remarks>
     public bool ContainsPath(string path)
     {
@@ -122,10 +151,15 @@ public sealed class AppPaths
             return false;
         }
 
-        string root = Root.TrimEnd(Path.DirectorySeparatorChar);
+        return IsAtOrUnder(full, Root) || IsAtOrUnder(full, InstallDirectory);
+    }
 
-        return full.Equals(root, StringComparison.OrdinalIgnoreCase)
-            || full.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+    private static bool IsAtOrUnder(string candidate, string directory)
+    {
+        string trimmed = directory.TrimEnd(Path.DirectorySeparatorChar);
+
+        return candidate.Equals(trimmed, StringComparison.OrdinalIgnoreCase)
+            || candidate.StartsWith(trimmed + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
     }
 
     private static string ResolveDefaultRoot()
@@ -137,19 +171,6 @@ public sealed class AppPaths
         }
 
         string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-
-        // Sous MSIX, un processus peut voir un %LOCALAPPDATA% redirige vers le magasin prive du
-        // paquet. Le shell (dans explorer.exe) et l'app doivent imperativement designer le meme
-        // dossier d'icones : on revient donc au chemin reel du profil des qu'on detecte la
-        // redirection.
-        if (localAppData.Contains(@"\Packages\", StringComparison.OrdinalIgnoreCase))
-        {
-            string profile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            if (!string.IsNullOrEmpty(profile))
-            {
-                localAppData = Path.Combine(profile, "AppData", "Local");
-            }
-        }
 
         return Path.Combine(localAppData, FolderName);
     }

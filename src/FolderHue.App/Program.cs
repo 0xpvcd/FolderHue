@@ -8,12 +8,12 @@ using FolderHue.Core.Storage;
 namespace FolderHue.App;
 
 /// <summary>
-/// Point d'entree de l'application de reglages.
+/// Entry point of the settings application.
 /// </summary>
 /// <remarks>
-/// L'executable joue trois roles : l'interface de reglages quand il est lance sans argument, le
-/// generateur d'icones appele par l'installation, et le porte-parole du shell — qui ne peut pas
-/// afficher de boite de dialogue depuis <c>explorer.exe</c> sans risque (CLAUDE.md §6.5).
+/// The executable plays three parts: the settings window when launched with no argument, the icon
+/// generator the installer calls, and the shell's spokesman - the shell cannot safely show a
+/// dialog from inside <c>explorer.exe</c> (CLAUDE.md 6.5).
 /// </remarks>
 [SupportedOSPlatform("windows")]
 internal static class Program
@@ -34,7 +34,7 @@ internal static class Program
         }
         catch (Exception e)
         {
-            Log.Default.Error("Echec inattendu de FolderHue.App.", e);
+            Log.Default.Error("Unexpected failure in FolderHue.App.", e);
             return 1;
         }
     }
@@ -48,7 +48,7 @@ internal static class Program
                 int written = IconLibrary.CreateDefault().EnsureAll(force);
                 Console.Out.WriteLine(string.Create(
                     CultureInfo.InvariantCulture,
-                    $"{written} icone(s) generee(s) dans {AppPaths.Default.IconsDirectory}"));
+                    $"{written} icon(s) generated in {AppPaths.Default.IconsDirectory}"));
                 return 0;
 
             case AppCommands.ResetAll:
@@ -61,43 +61,48 @@ internal static class Program
                 ReportSkipped(args.Length > 1 ? args[1] : "0");
                 return 0;
 
-            case AppCommands.GeneratePackageAssets:
+            case AppCommands.Register:
+                return Register();
+
+            case AppCommands.Unregister:
+                return Unregister();
+
+            case AppCommands.ExportIcon:
                 if (args.Length < 2)
                 {
-                    Console.Error.WriteLine($"Usage : {AppCommands.GeneratePackageAssets} <dossier de sortie>");
+                    Console.Error.WriteLine($"Usage: {AppCommands.ExportIcon} <.ico file>");
                     return 2;
                 }
 
-                PackageAssets.Generate(args[1]);
-                return 0;
+                return ExportIcon(args[1]);
 
             default:
-                Console.Error.WriteLine($"Argument inconnu : {args[0]}");
+                Console.Error.WriteLine($"Unknown argument: {args[0]}");
                 return 2;
         }
     }
 
     /// <summary>
-    /// Regenere la bibliotheque d'icones puis applique l'operation demandee par le shell.
+    /// Regenerates the icon library, then applies the operation the shell asked for.
     /// </summary>
     /// <param name="args">
-    /// <c>--apply &lt;couleur&gt; &lt;embleme&gt; &lt;dossier&gt;…</c>, ou
-    /// <see cref="AppCommands.Absent"/> tient lieu de valeur non precisee.
+    /// <c>--apply &lt;color&gt; &lt;emblem&gt; &lt;folder&gt;…</c>, where
+    /// <see cref="AppCommands.Absent"/> stands for an unspecified value.
     /// </param>
-    /// <returns>0 si tous les dossiers ont abouti.</returns>
+    /// <returns>0 when every folder succeeded.</returns>
     /// <remarks>
-    /// Le menu contextuel appelle ce chemin quand une icone manque. Le shell ne genere jamais
-    /// d'icone lui-meme (CLAUDE.md §4.3) ; se contenter de lancer la pre-generation laisserait le
-    /// clic de l'utilisateur sans effet et sans message. C'est donc ici que l'action est reprise,
-    /// hors du processus de l'Explorateur.
+    /// The context menu takes this path when an icon is missing. The shell never generates an icon
+    /// itself (CLAUDE.md 4.3); merely running the pre-generation would leave the user's click
+    /// silent and without effect. This is therefore where the action is picked up, outside
+    /// Explorer's process.
     /// </remarks>
     private static int ApplyFromCommandLine(string[] args)
     {
         if (args.Length < 4)
         {
             Console.Error.WriteLine(
-                $"Usage : {AppCommands.Apply} <couleur|{AppCommands.Absent}> " +
-                $"<embleme|{AppCommands.Absent}> <dossier> [dossier...]");
+                $"Usage: {AppCommands.Apply} <color|{AppCommands.Absent}> " +
+                $"<emblem|{AppCommands.Absent}> <folder> [folder...]");
             return 2;
         }
 
@@ -131,12 +136,84 @@ internal static class Program
     }
 
     /// <summary>
-    /// Reinitialise tous les dossiers connus du journal.
+    /// Declares the context menu for the current user.
     /// </summary>
-    /// <returns>0 si tout a abouti.</returns>
+    /// <returns>0 when the declaration succeeded.</returns>
     /// <remarks>
-    /// Aucun dossier ni fichier utilisateur n'est supprime : seules nos propres modifications sont
-    /// retirees (CLAUDE.md §6.6).
+    /// The DLL and the logo are looked for next to the executable: the installer decides where the
+    /// application lives, not us. The logo may be missing if the palette was never generated, so it
+    /// is produced before the keys are written - a menu entry with no chip looks broken.
+    /// </remarks>
+    private static int Register()
+    {
+        string directory = AppContext.BaseDirectory;
+        string library = Path.Combine(directory, ShellRegistration.LibraryFileName);
+
+        if (!File.Exists(library))
+        {
+            Console.Error.WriteLine($"{ShellRegistration.LibraryFileName} was not found next to the application: {directory}");
+            return 1;
+        }
+
+        IconLibrary.CreateDefault().EnsureAll();
+
+        var registration = new ShellRegistration();
+        registration.Register(library, AppPaths.Default.BrandLogoPath);
+
+        Log.Default.Info($"Context menu registered: \"{library}\".");
+        Console.Out.WriteLine($"Context menu registered under HKCU\\{registration.VerbKeyPath}");
+        return 0;
+    }
+
+    /// <summary>
+    /// Writes the brand logo as an <c>.ico</c> to the requested location.
+    /// </summary>
+    /// <param name="destination">Path of the file to produce. Its directory is created if needed.</param>
+    /// <returns>0 when the file was written.</returns>
+    private static int ExportIcon(string destination)
+    {
+        IconLibrary.CreateDefault().EnsureAll();
+
+        string source = AppPaths.Default.BrandLogoPath;
+        if (!File.Exists(source))
+        {
+            Console.Error.WriteLine($"The logo has not been generated: {source}");
+            return 1;
+        }
+
+        string? directory = Path.GetDirectoryName(Path.GetFullPath(destination));
+        if (!string.IsNullOrEmpty(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        File.Copy(source, destination, overwrite: true);
+        Console.Out.WriteLine($"Logo exported: {destination}");
+        return 0;
+    }
+
+    /// <summary>
+    /// Removes the context menu declaration from the registry.
+    /// </summary>
+    /// <returns>0 in every case: an uninstall must never fail on this point.</returns>
+    /// <remarks>
+    /// No user folder is touched: the uninstaller separately offers to reset the colored folders
+    /// (CLAUDE.md 6.6).
+    /// </remarks>
+    private static int Unregister()
+    {
+        bool removed = new ShellRegistration().Unregister();
+        Log.Default.Info(removed ? "Context menu removed from the registry." : "Context menu was already absent from the registry.");
+        Console.Out.WriteLine(removed ? "Context menu removed." : "Context menu already absent.");
+        return 0;
+    }
+
+    /// <summary>
+    /// Resets every folder the journal knows about.
+    /// </summary>
+    /// <returns>0 when everything succeeded.</returns>
+    /// <remarks>
+    /// No user folder or file is deleted: only our own modifications are removed (CLAUDE.md 6.6).
     /// </remarks>
     private static int ResetAll()
     {
@@ -157,9 +234,9 @@ internal static class Program
     }
 
     /// <summary>
-    /// Affiche le message expliquant que des dossiers ont ete refuses.
+    /// Shows the message explaining that some folders were refused.
     /// </summary>
-    /// <param name="rawCount">Le nombre de dossiers refuses, tel que transmis par le shell.</param>
+    /// <param name="rawCount">How many folders were refused, as the shell passed it.</param>
     private static void ReportSkipped(string rawCount)
     {
         if (!int.TryParse(rawCount, NumberStyles.Integer, CultureInfo.InvariantCulture, out int count) || count <= 0)

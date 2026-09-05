@@ -1,13 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    DLL COM in-process chargee dans explorer.exe.
+    In-process COM DLL, loaded inside explorer.exe.
 
-    NativeAOT n'est pas une optimisation, c'est une exigence (CLAUDE.md §2.1) : une extension
-    shell manageee chargerait le CLR dans l'Explorateur, avec les conflits de version et les
-    plantages que Microsoft deconseille formellement. Le serveur COM est expose par
-    ComWrappers (StrategyBasedComWrappers + generateurs COM de .NET 8), jamais par
-    [ComVisible] ni RegAsm, non supportes en AOT.
+    NativeAOT is not an optimisation here, it is a requirement (CLAUDE.md 2.1): a managed shell
+    extension would load the CLR into Explorer, with the runtime version conflicts and crashes
+    Microsoft formally advises against. The COM server is exposed through ComWrappers
+    (StrategyBasedComWrappers plus the .NET 8 COM source generators), never through
+    [ComVisible] or RegAsm, neither of which is supported under AOT.
+
+    The DLL used to embed an MSIX identity manifest. It no longer does: the extension is
+    registered under HKCU\Software\Classes as a classic in-process server, so there is no
+    package identity to declare. With that manifest gone, the linker no longer conflicts with
+    the Win32 resources ILCompiler emits, and the DLL gets its version block back.
   -->
   <PropertyGroup>
     <PublishAot>true</PublishAot>
@@ -21,48 +26,18 @@
     <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
 
     <!--
-      Les assemblys satellites ne survivent pas a la compilation NativeAOT : le menu utilise
-      les ressources neutres (fr-FR) embarquees dans l'image. L'application de reglages, elle,
-      reste entierement localisee.
+      Satellite assemblies do not survive NativeAOT compilation, so the menu always shows the
+      neutral resources embedded in the image, which are the English ones. The settings
+      application is not AOT-compiled and stays fully localised.
     -->
-    <SatelliteResourceLanguages>fr</SatelliteResourceLanguages>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
 
-    <!--
-      ILCompiler recopie par defaut les ressources Win32 de l'assembly gere dans l'objet natif.
-      Le lieur refuse alors d'y ajouter le manifeste embarque (LNK1241). Comme le manifeste
-      d'identite MSIX est indispensable et que le bloc de version d'une DLL in-process n'est que
-      cosmetique — c'est le paquet MSIX qui porte la version qui compte — on desactive le premier
-      au profit du second.
-    -->
-    <IlcGenerateWin32Resources>false</IlcGenerateWin32Resources>
-
-    <!-- Une extension shell doit demarrer instantanement et ne jamais faire tomber Explorer. -->
+    <!-- A shell extension must start instantly and must never bring Explorer down. -->
     <InvariantGlobalization>false</InvariantGlobalization>
     <UseSystemResourceKeys>false</UseSystemResourceKeys>
     <StackTraceSupport>false</StackTraceSupport>
     <OptimizationPreference>Size</OptimizationPreference>
   </PropertyGroup>
-
-  <!--
-    Manifeste d'identite MSIX embarque dans la DLL.
-    S'il manque, l'Explorateur ne charge tout simplement pas l'extension, sans le moindre
-    message d'erreur : c'est le piege numero deux de ce projet (CLAUDE.md §4.5).
-  -->
-  <Target Name="EmbedMsixIdentityManifest" BeforeTargets="LinkNative">
-    <ItemGroup>
-      <!--
-        Microsoft.NETCore.Native.Windows.targets ajoute « /NOLOGO /MANIFEST:NO » a la ligne de
-        commande du lieur. Comme le dernier commutateur l'emporte, un simple ajout de
-        /MANIFEST:EMBED serait ignore (LNK4075). On retire donc l'argument d'origine et on
-        replace /NOLOGO nous-memes.
-      -->
-      <LinkerArg Remove="/NOLOGO /MANIFEST:NO" />
-      <LinkerArg Include="/NOLOGO" />
-      <LinkerArg Include="/MANIFEST:EMBED" />
-      <LinkerArg Include="/MANIFESTINPUT:$(MSBuildProjectDirectory)\FolderHue.Shell.manifest" />
-      <LinkerArg Include="/MANIFESTUAC:NO" />
-    </ItemGroup>
-  </Target>
 
   <ItemGroup>
     <ProjectReference Include="..\FolderHue.Core\FolderHue.Core.csproj" />

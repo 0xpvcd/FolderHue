@@ -1,47 +1,63 @@
 namespace FolderHue.Core.Storage;
 
 /// <summary>
-/// Ligne de commande de <c>FolderHue.App</c>, telle que l'appelle le menu contextuel.
+/// The <c>FolderHue.App</c> command line, as the context menu and the installer call it.
 /// </summary>
 /// <remarks>
-/// Le shell delegue a l'application tout ce qu'il ne doit pas faire lui-meme : generer une icone,
-/// afficher une boite de dialogue (CLAUDE.md §4.3, §6.5). Les deux projets referencent donc les
-/// memes constantes plutot que de recopier les chaines de part et d'autre — une divergence d'un
-/// caractere se traduirait par un clic sans effet, sans le moindre message.
+/// The shell delegates to the application everything it must not do itself: generating an icon,
+/// showing a dialog (CLAUDE.md 4.3, 6.5). Both projects therefore reference the same constants
+/// rather than repeating the strings on either side — a one-character drift would show up as a
+/// click that does nothing, with no message at all.
 /// </remarks>
 public static class AppCommands
 {
-    /// <summary>Pre-genere toute la palette, sans interface.</summary>
+    /// <summary>Pre-generates the whole palette, with no UI.</summary>
     public const string Pregenerate = "--pregenerate";
 
-    /// <summary>Force la regeneration meme si les fichiers existent.</summary>
+    /// <summary>Forces regeneration even when the files already exist.</summary>
     public const string Force = "--force";
 
-    /// <summary>Reinitialise tous les dossiers du journal, sans interface.</summary>
+    /// <summary>Resets every folder listed in the journal, with no UI.</summary>
     public const string ResetAll = "--reset-all";
 
-    /// <summary>Affiche le compte de dossiers refuses par la liste d'exclusion.</summary>
+    /// <summary>Reports how many folders the exclusion list refused.</summary>
     public const string ReportSkipped = "--report-skipped";
 
-    /// <summary>Produit les logos du paquet MSIX.</summary>
-    public const string GeneratePackageAssets = "--generate-package-assets";
+    /// <summary>Declares the context menu in the current user's registry.</summary>
+    /// <remarks>
+    /// The installer calls this switch rather than writing the keys itself, so that repair and
+    /// uninstall go through exactly the same code — the code the tests cover
+    /// (<see cref="ShellRegistration"/>).
+    /// </remarks>
+    public const string Register = "--register";
+
+    /// <summary>Removes the keys <see cref="Register"/> wrote.</summary>
+    public const string Unregister = "--unregister";
+
+    /// <summary>Writes the brand logo, as an <c>.ico</c>, wherever it is asked to.</summary>
+    /// <remarks>
+    /// This serves the build: the executable and the installer both need an <c>.ico</c> before the
+    /// application exists, which rules out producing it on the fly. The resulting file is versioned
+    /// under <c>installer/</c> and regenerated through this switch whenever the logo changes.
+    /// </remarks>
+    public const string ExportIcon = "--export-icon";
 
     /// <summary>
-    /// Regenere ce qui manque puis applique l'operation demandee.
+    /// Regenerates whatever is missing, then applies the requested operation.
     /// </summary>
     /// <remarks>
-    /// Forme attendue : <c>--apply &lt;couleur&gt; &lt;embleme&gt; &lt;dossier&gt;…</c>, ou
-    /// <see cref="Absent"/> tient lieu de couleur ou d'embleme non precise.
+    /// Expected form: <c>--apply &lt;color&gt; &lt;emblem&gt; &lt;folder&gt;…</c>, where
+    /// <see cref="Absent"/> stands for an unspecified color or emblem.
     /// </remarks>
     public const string Apply = "--apply";
 
     /// <summary>
-    /// Marque un argument non precise.
+    /// Marks an unspecified argument.
     /// </summary>
     /// <remarks>
-    /// Une chaine vide ne conviendrait pas : <c>ProcessStartInfo.ArgumentList</c> la transmet bien,
-    /// mais elle se confond avec une valeur oubliee. Un tiret est explicite et ne peut pas etre un
-    /// identifiant de couleur ou d'embleme valide.
+    /// An empty string would not do: <c>ProcessStartInfo.ArgumentList</c> passes it through
+    /// correctly, but it is indistinguishable from a value someone forgot. A dash is explicit, and
+    /// cannot be a valid color or emblem identifier.
     /// </remarks>
     public const string Absent = "-";
 }

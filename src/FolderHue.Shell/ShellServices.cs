@@ -6,45 +6,44 @@ using FolderHue.Core.Storage;
 namespace FolderHue.Shell;
 
 /// <summary>
-/// Services partages par les commandes du menu, initialises paresseusement.
+/// Services shared by the menu commands, initialised lazily.
 /// </summary>
 /// <remarks>
-/// Rien de couteux n'est construit au chargement de la DLL : <c>GetTitle</c> et <c>GetIcon</c> sont
-/// appeles a chaque ouverture du menu et doivent rester instantanes (CLAUDE.md §4.4). La liste
-/// d'exclusion, qui interroge une quinzaine de dossiers connus, n'est construite qu'au premier
-/// <c>Invoke</c>.
+/// Nothing expensive is built when the DLL loads: <c>GetTitle</c> and <c>GetIcon</c> run every time
+/// the menu opens and must stay instant (CLAUDE.md 4.4). The exclusion list, which queries some
+/// fifteen known folders, is only built on the first <c>Invoke</c>.
 /// </remarks>
 internal static class ShellServices
 {
     private static readonly Lazy<FolderCustomizer> LazyCustomizer =
         new(FolderCustomizer.CreateDefault, LazyThreadSafetyMode.ExecutionAndPublication);
 
-    /// <summary>Emplacements de travail. Simple calcul de chemins, sans acces disque.</summary>
+    /// <summary>Working locations. Pure path arithmetic, no disk access.</summary>
     internal static AppPaths Paths => AppPaths.Default;
 
-    /// <summary>Journal de diagnostic.</summary>
+    /// <summary>Diagnostic log.</summary>
     internal static Log Log => Log.Default;
 
-    /// <summary>Le personnalisateur de dossiers, construit au premier usage.</summary>
+    /// <summary>The folder customizer, built on first use.</summary>
     internal static FolderCustomizer Customizer => LazyCustomizer.Value;
 
     /// <summary>
-    /// Applique une teinte a toute la selection.
+    /// Applies a hue to the whole selection.
     /// </summary>
-    /// <param name="paths">Les dossiers selectionnes.</param>
-    /// <param name="colorId">La teinte a appliquer.</param>
+    /// <param name="paths">The selected folders.</param>
+    /// <param name="colorId">The hue to apply.</param>
     /// <remarks>
-    /// L'embleme n'est pas precise : appliquer une couleur ne doit pas effacer le marqueur en
+    /// The emblem is left unspecified: applying a color must not erase the marker already in
     /// place.
     /// </remarks>
     internal static void ApplyColor(IReadOnlyList<string> paths, string colorId)
         => Run(paths, path => Customizer.Apply(path, colorId, null), colorId, AppCommands.Absent);
 
     /// <summary>
-    /// Applique un embleme a toute la selection, en conservant la couleur de chaque dossier.
+    /// Applies an emblem to the whole selection, keeping each folder's color.
     /// </summary>
-    /// <param name="paths">Les dossiers selectionnes.</param>
-    /// <param name="emblemId">Le marqueur a poser.</param>
+    /// <param name="paths">The selected folders.</param>
+    /// <param name="emblemId">The marker to place.</param>
     internal static void ApplyEmblem(IReadOnlyList<string> paths, string emblemId)
         => Run(
             paths,
@@ -53,29 +52,29 @@ internal static class ShellServices
             emblemId);
 
     /// <summary>
-    /// Reinitialise toute la selection.
+    /// Resets the whole selection.
     /// </summary>
-    /// <param name="paths">Les dossiers selectionnes.</param>
+    /// <param name="paths">The selected folders.</param>
     /// <remarks>
-    /// La reinitialisation ne consomme aucune icone : elle ne peut donc jamais echouer faute de
-    /// pre-generation, et n'a rien a deleguer a l'application.
+    /// Resetting consumes no icon, so it can never fail for want of pre-generation and has nothing
+    /// to delegate to the application.
     /// </remarks>
     internal static void Reset(IReadOnlyList<string> paths)
         => Run(paths, Customizer.Reset, colorArgument: null, emblemArgument: null);
 
     /// <summary>
-    /// Applique une operation a toute la selection et rend compte des echecs.
+    /// Applies an operation to the whole selection and reports the failures.
     /// </summary>
-    /// <param name="paths">Les dossiers selectionnes.</param>
-    /// <param name="operation">L'operation a appliquer a chacun.</param>
+    /// <param name="paths">The selected folders.</param>
+    /// <param name="operation">The operation to apply to each one.</param>
     /// <param name="colorArgument">
-    /// La teinte a transmettre a l'application pour une reprise, ou <see langword="null"/> si
-    /// l'operation n'est pas reprenable.
+    /// The hue to hand to the application for a retry, or <see langword="null"/> when the
+    /// operation cannot be retried.
     /// </param>
-    /// <param name="emblemArgument">Le marqueur a transmettre pour une reprise.</param>
+    /// <param name="emblemArgument">The marker to hand over for a retry.</param>
     /// <remarks>
-    /// C'est ici que se joue la selection multiple (F4) : un refus sur un dossier n'interrompt
-    /// jamais le traitement des autres.
+    /// This is where multiple selection (F4) plays out: a refusal on one folder never interrupts
+    /// the processing of the others.
     /// </remarks>
     private static void Run(
         IReadOnlyList<string> paths,
@@ -112,29 +111,29 @@ internal static class ShellServices
 
         if (refused > 0)
         {
-            // Une boite de dialogue affichee depuis explorer.exe est un risque : c'est
-            // l'application qui parle a l'utilisateur.
+            // Showing a dialog from inside explorer.exe is a risk: the application is what talks
+            // to the user.
             LaunchApp(AppCommands.ReportSkipped, refused.ToString(CultureInfo.InvariantCulture));
         }
     }
 
     /// <summary>
-    /// Confie a l'application les dossiers dont l'icone n'etait pas encore generee.
+    /// Hands the application the folders whose icon had not been generated yet.
     /// </summary>
-    /// <param name="colorArgument">La teinte demandee, ou <c>-</c> pour conserver l'existante.</param>
-    /// <param name="emblemArgument">Le marqueur demande, ou <c>-</c> pour conserver l'existant.</param>
-    /// <param name="paths">Les dossiers a reprendre.</param>
+    /// <param name="colorArgument">The requested hue, or <c>-</c> to keep the existing one.</param>
+    /// <param name="emblemArgument">The requested marker, or <c>-</c> to keep the existing one.</param>
+    /// <param name="paths">The folders to retry.</param>
     /// <remarks>
-    /// Le shell ne genere jamais d'icone lui-meme (CLAUDE.md §4.3). Il ne suffit pas pour autant
-    /// de lancer la pre-generation et d'en rester la : le clic de l'utilisateur resterait sans
-    /// effet et sans message. L'application regenere ce qui manque <b>puis applique</b> l'action
-    /// demandee, hors du processus de l'Explorateur.
+    /// The shell never generates an icon itself (CLAUDE.md 4.3). Running the pre-generation and
+    /// leaving it at that is not enough either: the user's click would stay silent and without
+    /// effect. The application regenerates what is missing <b>and then applies</b> the requested
+    /// action, outside Explorer's process.
     /// </remarks>
     private static void Retry(string? colorArgument, string? emblemArgument, IReadOnlyList<string> paths)
     {
         if (colorArgument is null || emblemArgument is null)
         {
-            // Operation non reprenable : on se contente de remettre la palette d'aplomb.
+            // Not retryable: just put the palette back in order.
             LaunchApp(AppCommands.Pregenerate);
             return;
         }
@@ -146,20 +145,20 @@ internal static class ShellServices
     }
 
     /// <summary>
-    /// Lance l'application de reglages, qui est deployee a cote de la DLL.
+    /// Launches the settings application, which is deployed next to the DLL.
     /// </summary>
-    /// <param name="arguments">Les arguments de ligne de commande.</param>
+    /// <param name="arguments">The command line arguments.</param>
     private static void LaunchApp(params string[] arguments)
     {
         try
         {
-            // Surtout pas AppContext.BaseDirectory : charge dans un processus hote, il rend
-            // C:\Windows\System32 et l'application ne serait jamais trouvee.
+            // Emphatically not AppContext.BaseDirectory: loaded inside a host process it returns
+            // C:\Windows\System32, and the application would never be found.
             string? directory = NativeMethods.GetModuleDirectory();
 
             if (directory is null)
             {
-                Log.Warn("Le dossier de la DLL n'a pas pu etre determine.");
+                Log.Warn("The DLL directory could not be determined.");
                 return;
             }
 
@@ -167,7 +166,7 @@ internal static class ShellServices
 
             if (!File.Exists(executable))
             {
-                Log.Warn($"L'application est introuvable a cote de la DLL : « {executable} ».");
+                Log.Warn($"The application was not found next to the DLL: \"{executable}\".");
                 return;
             }
 
@@ -187,7 +186,7 @@ internal static class ShellServices
         }
         catch (Exception e)
         {
-            Log.Error("Impossible de lancer FolderHue.App.", e);
+            Log.Error("Could not launch FolderHue.App.", e);
         }
     }
 }

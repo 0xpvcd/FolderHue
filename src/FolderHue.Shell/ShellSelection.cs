@@ -4,38 +4,38 @@ using FolderHue.Shell.Com;
 namespace FolderHue.Shell;
 
 /// <summary>
-/// Lecture de la selection sur laquelle l'utilisateur a fait un clic droit.
+/// Reads the selection the user right-clicked.
 /// </summary>
 /// <remarks>
-/// Toutes les methodes sont defensives : elles s'executent dans <c>explorer.exe</c> et retournent
-/// une valeur neutre plutot que de lever (CLAUDE.md §6.5).
+/// Every method is defensive: they run inside <c>explorer.exe</c> and return a neutral value
+/// rather than throw (CLAUDE.md 6.5).
 /// </remarks>
 internal static class ShellSelection
 {
-    /// <summary>Chemin complet dans le systeme de fichiers. <c>SIGDN_FILESYSPATH</c>, shobjidl_core.h.</summary>
+    /// <summary>Full file system path. <c>SIGDN_FILESYSPATH</c>, shobjidl_core.h.</summary>
     private const uint SigdnFileSysPath = 0x80058000;
 
-    /// <summary>L'element est un dossier. <c>SFGAO_FOLDER</c>, shobjidl_core.h.</summary>
+    /// <summary>The item is a folder. <c>SFGAO_FOLDER</c>, shobjidl_core.h.</summary>
     private const uint SfgaoFolder = 0x20000000;
 
-    /// <summary>L'element existe dans le systeme de fichiers. <c>SFGAO_FILESYSTEM</c>, shobjidl_core.h.</summary>
+    /// <summary>The item exists in the file system. <c>SFGAO_FILESYSTEM</c>, shobjidl_core.h.</summary>
     private const uint SfgaoFileSystem = 0x40000000;
 
-    /// <summary>Combine les attributs par ET logique. <c>SIATTRIBFLAGS_AND</c>, shobjidl_core.h.</summary>
+    /// <summary>Combines the attributes with a logical AND. <c>SIATTRIBFLAGS_AND</c>, shobjidl_core.h.</summary>
     private const uint SiAttribFlagsAnd = 0x1;
 
     /// <summary>
-    /// Indique si la selection ne contient que des dossiers du systeme de fichiers.
+    /// Indicates whether the selection holds nothing but file system folders.
     /// </summary>
-    /// <param name="psiItemArray">Pointeur natif sur <c>IShellItemArray</c>.</param>
+    /// <param name="psiItemArray">Native pointer to an <c>IShellItemArray</c>.</param>
     /// <returns>
-    /// <see langword="false"/> des qu'un element n'est pas un dossier reel : un fichier,
-    /// « Ce PC », une bibliotheque.
+    /// <see langword="false"/> as soon as one item is not a real folder: a file, "This PC", a
+    /// library.
     /// </returns>
     /// <remarks>
-    /// L'appel passe par <c>IShellItemArray::GetAttributes</c>, qui combine les attributs deja
-    /// connus du shell : aucun acces disque, ce qui est indispensable ici puisque la methode est
-    /// appelee a chaque ouverture du menu (CLAUDE.md §4.4).
+    /// The call goes through <c>IShellItemArray::GetAttributes</c>, which combines attributes the
+    /// shell already knows: no disk access, which is essential here since the method runs every
+    /// time the menu opens (CLAUDE.md 4.4).
     /// </remarks>
     internal static bool IsFileSystemFolderSelection(IntPtr psiItemArray)
     {
@@ -76,12 +76,11 @@ internal static class ShellSelection
     }
 
     /// <summary>
-    /// Retourne les chemins des dossiers selectionnes.
+    /// Returns the paths of the selected folders.
     /// </summary>
-    /// <param name="psiItemArray">Pointeur natif sur <c>IShellItemArray</c>.</param>
+    /// <param name="psiItemArray">Native pointer to an <c>IShellItemArray</c>.</param>
     /// <returns>
-    /// Les chemins du systeme de fichiers. Les elements qui n'en ont pas sont ignores
-    /// silencieusement.
+    /// The file system paths. Items that have none are silently skipped.
     /// </returns>
     internal static List<string> GetPaths(IntPtr psiItemArray)
     {
@@ -132,7 +131,7 @@ internal static class ShellSelection
         }
         catch (Exception e) when (e is COMException or InvalidCastException or NotSupportedException)
         {
-            // Une selection illisible se traduit par une liste vide, jamais par une exception.
+            // An unreadable selection becomes an empty list, never an exception.
         }
         finally
         {
@@ -163,7 +162,7 @@ internal static class ShellSelection
         {
             if (buffer != IntPtr.Zero)
             {
-                // GetDisplayName alloue avec CoTaskMemAlloc : a l'appelant de liberer.
+                // GetDisplayName allocates with CoTaskMemAlloc: the caller frees it.
                 Marshal.FreeCoTaskMem(buffer);
             }
         }

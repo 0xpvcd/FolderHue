@@ -1,31 +1,34 @@
+using FolderHue.Core.Storage;
+
 namespace FolderHue.Shell.Com;
 
 /// <summary>
-/// Identifiants COM du projet.
+/// COM identifiers used by the shell extension.
 /// </summary>
 /// <remarks>
-/// <b>Source unique de verite du CLSID.</b> La meme valeur doit apparaitre, au caractere pres,
-/// dans <c>FolderHue.Package/AppxManifest.xml</c> — a la fois dans <c>com:Class/@Id</c> et
-/// dans <c>desktop5:Verb/@Clsid</c>. Un ecart et l'entree n'apparait pas dans le menu, sans
-/// message d'erreur (CLAUDE.md §10). <c>scripts/build.ps1</c> verifie cette correspondance.
+/// The CLSID is <b>not</b> declared here. It belongs to
+/// <see cref="ShellRegistration.ClassIdText"/>, because the same value has to be written into the
+/// registry by the installer and answered by this server. Keeping one constant, referenced from
+/// both sides, removes the whole class of failure where the two drift apart — which shows up as a
+/// menu entry that never appears, with no error anywhere.
 /// </remarks>
 internal static class Guids
 {
-    /// <summary>CLSID du serveur COM de la commande racine « FolderHue ».</summary>
-    internal const string RootCommandClsidText = "C228C2F8-706B-4A2E-9C48-74F3062BE146";
+    /// <summary>CLSID of the root "FolderHue" command's COM server.</summary>
+    internal const string RootCommandClsidText = ShellRegistration.ClassIdText;
 
-    /// <summary>CLSID du serveur COM, sous forme binaire.</summary>
+    /// <summary>CLSID of the COM server, in binary form.</summary>
     internal static Guid RootCommandClsid { get; } = new(RootCommandClsidText);
 
-    /// <summary>IID de <c>IUnknown</c>.</summary>
+    /// <summary>IID of <c>IUnknown</c>.</summary>
     internal static Guid IUnknown { get; } = new("00000000-0000-0000-C000-000000000046");
 
-    /// <summary>IID de <c>IClassFactory</c>.</summary>
+    /// <summary>IID of <c>IClassFactory</c>.</summary>
     internal static Guid IClassFactory { get; } = new("00000001-0000-0000-C000-000000000046");
 
-    /// <summary>IID de <c>IExplorerCommand</c>.</summary>
+    /// <summary>IID of <c>IExplorerCommand</c>.</summary>
     internal static Guid IExplorerCommand { get; } = new("a08ce4d0-fa25-44ab-b57c-c7b1c323e0b9");
 
-    /// <summary>IID de <c>IEnumExplorerCommand</c>.</summary>
+    /// <summary>IID of <c>IEnumExplorerCommand</c>.</summary>
     internal static Guid IEnumExplorerCommand { get; } = new("a88826f8-186f-4987-aade-ea0cef8fbfe8");
 }

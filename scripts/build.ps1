@@ -1,44 +1,35 @@
-<#
+﻿<#
 .SYNOPSIS
-    Construit FolderHue : build, tests, publication NativeAOT et assemblage du paquet.
+    Batit FolderHue et produit l'installeur.
 
 .DESCRIPTION
-    Enchaine les etapes suivantes :
-      1. verification de coherence des identites (CLSID, packageName, publisher, applicationId) ;
-      2. build de la solution et execution des tests unitaires de Core ;
-      3. publication de FolderHue.App ;
-      4. publication de FolderHue.Shell en NativeAOT ;
-      5. assemblage de artifacts\package (DLL + app + manifeste + logos) ;
-      6. pre-generation de la palette d'icones ;
-      7. optionnellement, production d'un MSIX complet signable.
+    Enchaine, dans cet ordre :
 
-    L'etape 1 n'est pas cosmetique : un ecart d'un seul caractere entre le manifeste embarque
-    dans la DLL et AppxManifest.xml fait que l'Explorateur ignore l'extension, sans le moindre
-    message d'erreur (CLAUDE.md §10).
+      1. mise en place de la chaine d'outils (vswhere et Windows SDK) ;
+      2. tests unitaires de Core ;
+      3. publication NativeAOT de FolderHue.Shell.dll ;
+      4. publication autonome de FolderHue.App, runtime .NET compris ;
+      5. compilation de l'installeur Inno Setup.
 
-.PARAMETER Configuration
-    Configuration de build. Release par defaut.
+    Le paquet MSIX a disparu : FolderHue s'enregistre desormais comme une extension shell
+    classique, sous HKEY_CURRENT_USER, et se distribue par un simple executable. Plus de
+    certificat a fabriquer, plus de deploiement sparse, plus de desenregistrement prealable
+    qui laissait la machine sans extension quand le build echouait en cours de route.
 
 .PARAMETER SkipTests
-    N'execute pas les tests unitaires. A eviter : CLAUDE.md §8 demande de lancer dotnet test
-    avant tout commit touchant Core.
+    N'execute pas les tests. A reserver aux allers-retours rapides sur le shell.
 
-.PARAMETER FullPackage
-    Produit en plus artifacts\FolderHue.msix, le paquet complet destine a la distribution
-    publique et au Microsoft Store.
+.PARAMETER NoInstaller
+    S'arrete apres la publication : produit artifacts\app sans appeler Inno Setup.
 
-.PARAMETER CertificateThumbprint
-    Empreinte d'un certificat du magasin personnel avec lequel signer le MSIX complet.
-    Sans ce parametre, le paquet est produit mais laisse non signe.
+.PARAMETER Configuration
+    Configuration MSBuild. Release par defaut.
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('Debug', 'Release')]
-    [string] $Configuration = 'Release',
-
     [switch] $SkipTests,
-    [switch] $FullPackage,
-    [string] $CertificateThumbprint
+    [switch] $NoInstaller,
+    [string] $Configuration = 'Release'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -46,19 +37,20 @@ Set-StrictMode -Version Latest
 
 $repository = Split-Path -Parent $PSScriptRoot
 $artifacts = Join-Path $repository 'artifacts'
-$layout = Join-Path $artifacts 'package'
+$appLayout = Join-Path $artifacts 'app'
 $runtime = 'win-x64'
 
 function Write-Step { param([string] $Message) Write-Host "==> $Message" -ForegroundColor Cyan }
 function Write-Ok   { param([string] $Message) Write-Host "    OK   $Message" -ForegroundColor Green }
+function Write-Warn { param([string] $Message) Write-Host "    !    $Message" -ForegroundColor Yellow }
 
-# --- Outils ----------------------------------------------------------------
+# --- Chaine d'outils --------------------------------------------------------
 
 function Initialize-BuildTools {
     <#
-        NativeAOT lie l'image finale avec link.exe. ILCompiler localise le toolset via
-        vswhere.exe, et link.exe a besoin de mt.exe pour embarquer le manifeste : ni l'un ni
-        l'autre n'est sur le PATH par defaut.
+        NativeAOT lie l'image finale avec link.exe, que ILCompiler localise via vswhere.exe.
+        Ni l'un ni l'autre n'est sur le PATH par defaut : un « dotnet publish -p:PublishAot=true »
+        lance a la main hors de ce script echoue a l'edition de liens.
     #>
     $installer = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
     if (-not (Test-Path (Join-Path $installer 'vswhere.exe'))) {
@@ -69,7 +61,7 @@ function Initialize-BuildTools {
     $sdkBin = Get-ChildItem $sdkRoot -Directory -Filter '10.*' -ErrorAction SilentlyContinue |
         Sort-Object Name -Descending |
         ForEach-Object { Join-Path $_.FullName 'x64' } |
-        Where-Object { Test-Path (Join-Path $_ 'makeappx.exe') } |
+        Where-Object { Test-Path (Join-Path $_ 'mt.exe') } |
         Select-Object -First 1
 
     if (-not $sdkBin) {
@@ -78,283 +70,146 @@ function Initialize-BuildTools {
 
     $env:PATH = "$installer;$sdkBin;$env:PATH"
     Write-Ok "toolchain : $sdkBin"
-    return $sdkBin
 }
 
-# --- 1. Coherence des identites --------------------------------------------
-
-function Assert-IdentityConsistency {
-    Write-Step 'Coherence des identites (CLSID et identite MSIX)'
-
-    $guidsFile = Join-Path $repository 'src\FolderHue.Shell\Com\Guids.cs'
-    $dllManifest = Join-Path $repository 'src\FolderHue.Shell\FolderHue.Shell.manifest'
-    $appxManifest = Join-Path $repository 'src\FolderHue.Package\AppxManifest.xml'
-
-    foreach ($file in @($guidsFile, $dllManifest, $appxManifest)) {
-        if (-not (Test-Path $file)) { throw "Fichier introuvable : $file" }
-    }
-
-    # CLSID declare dans le code
-    $guidsText = Get-Content $guidsFile -Raw
-    if ($guidsText -notmatch 'RootCommandClsidText\s*=\s*"([0-9A-Fa-f-]{36})"') {
-        throw "Impossible de lire RootCommandClsidText dans $guidsFile."
-    }
-    $clsid = $Matches[1]
-
-    # Identite declaree dans le manifeste embarque de la DLL
-    [xml] $dll = Get-Content $dllManifest -Raw
-    $msix = $dll.assembly.msix
-    if (-not $msix) { throw "Le bloc <msix> est absent de $dllManifest." }
-
-    # Identite declaree dans le paquet
-    [xml] $appx = Get-Content $appxManifest -Raw
-    $identity = $appx.Package.Identity
-    $application = $appx.Package.Applications.Application
-
-    $checks = @(
-        @{ Name = 'packageName';   Dll = $msix.packageName;   Appx = $identity.Name }
-        @{ Name = 'publisher';     Dll = $msix.publisher;     Appx = $identity.Publisher }
-        @{ Name = 'applicationId'; Dll = $msix.applicationId; Appx = $application.Id }
+function Get-InnoSetupCompiler {
+    <#
+        Inno Setup s'installe indifféremment pour la machine ou pour l'utilisateur : winget,
+        sans élévation, le pose sous %LOCALAPPDATA%\Programs. On essaie donc les trois
+        emplacements usuels, puis on interroge le registre de désinstallation, qui reste juste
+        quel que soit le mode d'installation.
+    #>
+    $candidates = @(
+        "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe",
+        "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+        "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
     )
 
-    foreach ($check in $checks) {
-        if ($check.Dll -cne $check.Appx) {
-            throw ("Divergence d'identite sur « {0} » : la DLL declare « {1} », le paquet « {2} ». " +
-                   'Sans correspondance exacte, Explorer ignore silencieusement l''extension.') -f `
-                   $check.Name, $check.Dll, $check.Appx
-        }
+    foreach ($candidate in $candidates) {
+        if (Test-Path $candidate) { return $candidate }
     }
 
-    $appxText = Get-Content $appxManifest -Raw
+    $keys = @(
+        'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*',
+        'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*',
+        'HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
+    )
 
-    # Le CLSID doit apparaitre comme classe COM et comme verbe desktop5.
-    foreach ($attribute in @('Id', 'Clsid')) {
-        if ($appxText -notmatch "$attribute=`"$([regex]::Escape($clsid))`"") {
-            throw "Le CLSID $clsid n'apparait pas en tant que $attribute dans AppxManifest.xml."
-        }
+    $location = Get-ItemProperty $keys -ErrorAction SilentlyContinue |
+        Where-Object { $_.DisplayName -like 'Inno Setup*' -and $_.InstallLocation } |
+        Select-Object -First 1 -ExpandProperty InstallLocation
+
+    if ($location) {
+        $fromRegistry = Join-Path $location 'ISCC.exe'
+        if (Test-Path $fromRegistry) { return $fromRegistry }
     }
 
-    # Le handler herite a ete retire : il produisait une SECONDE entree « FolderHue » dans le menu
-    # classique, sans icone et sans effet au clic, a cote de celle du verbe packagee qui, elle,
-    # fonctionne (CLAUDE.md §4.6). Le manifeste ne doit donc plus le declarer.
-    # On vise l'attribut Category, pas la chaine seule : elle est aussi citee en commentaire.
-    if ($appxText -match 'Category="windows\.fileExplorerClassicContextMenuHandler"') {
-        throw ("L'extension windows.fileExplorerClassicContextMenuHandler est de retour dans le " +
-               'manifeste : elle ajoute une seconde entree de menu inerte. Voir CLAUDE.md §4.6.')
-    }
-
-    Write-Ok "CLSID $clsid"
-    Write-Ok "identite $($identity.Name) / $($identity.Publisher) / $($application.Id)"
+    return $null
 }
 
-# --- Etapes de build -------------------------------------------------------
+# --- Coherence -------------------------------------------------------------
 
-function Invoke-App {
+function Assert-Consistency {
     <#
-        FolderHue.App est une application WinExe : l'operateur d'appel rend la main
-        immediatement sans attendre sa fin, et $LASTEXITCODE ne veut alors rien dire. Il faut
-        passer par Start-Process -Wait.
+        Le CLSID vit dans Core (ShellRegistration) et le serveur COM s'y refere : il n'y a plus
+        deux valeurs a tenir en phase, contrairement a l'epoque du manifeste MSIX. Reste a
+        verifier que l'icone de l'executable existe, car elle est necessaire AVANT la
+        compilation et ne peut donc pas etre produite par le build lui-meme.
     #>
-    param([string[]] $Arguments, [string] $Description)
+    Write-Step 'Coherence'
 
-    $executable = Join-Path $layout 'FolderHue.App.exe'
-    $process = Start-Process -FilePath $executable -ArgumentList $Arguments -Wait -PassThru -NoNewWindow
-
-    if ($process.ExitCode -ne 0) {
-        throw "$Description a echoue (code $($process.ExitCode))."
+    $icon = Join-Path $repository 'installer\FolderHue.ico'
+    if (-not (Test-Path $icon)) {
+        throw ("installer\FolderHue.ico est absent. Regenerez-le avec " +
+               "« FolderHue.App --export-icon installer\FolderHue.ico » depuis une build precedente.")
     }
+    Write-Ok 'icone de l''executable presente'
+
+    $manifest = Join-Path $repository 'src\FolderHue.Shell\FolderHue.Shell.manifest'
+    if (Test-Path $manifest) {
+        throw ("src\FolderHue.Shell\FolderHue.Shell.manifest est revenu. Ce fragment declare une " +
+               "identite MSIX : dans une DLL non packagee il n'a plus lieu d'etre.")
+    }
+    Write-Ok 'aucun residu MSIX'
 }
 
-function Invoke-Dotnet {
-    param([string[]] $Arguments, [string] $Description)
+# --- Etapes ----------------------------------------------------------------
 
-    & dotnet @Arguments
-    if ($LASTEXITCODE -ne 0) {
-        throw "$Description a echoue (code $LASTEXITCODE)."
-    }
-}
-
-function Build-Solution {
-    Write-Step "Build ($Configuration)"
-    Invoke-Dotnet @('build', (Join-Path $repository 'FolderHue.sln'), '-c', $Configuration, '--nologo') 'Le build'
-    Write-Ok 'solution compilee'
-}
-
-function Test-Core {
-    if ($SkipTests) {
-        Write-Step 'Tests unitaires ignores (-SkipTests)'
-        return
-    }
-
-    Write-Step 'Tests unitaires de Core'
-    Invoke-Dotnet @(
-        'test',
-        (Join-Path $repository 'tests\FolderHue.Core.Tests'),
-        '-c', $Configuration, '--nologo', '--no-build'
-    ) 'Les tests'
+function Invoke-Tests {
+    Write-Step 'Tests unitaires'
+    & dotnet test (Join-Path $repository 'tests\FolderHue.Core.Tests') -c $Configuration --nologo -v q
+    if ($LASTEXITCODE -ne 0) { throw "Les tests ont echoue (code $LASTEXITCODE)." }
     Write-Ok 'tests au vert'
 }
 
-function Publish-App {
-    Write-Step 'Publication de FolderHue.App'
-    Invoke-Dotnet @(
-        'publish',
-        (Join-Path $repository 'src\FolderHue.App'),
-        '-c', $Configuration, '-r', $runtime, '--self-contained', 'false', '--nologo'
-    ) 'La publication de l''application'
-    Write-Ok 'application publiee'
-}
-
 function Publish-Shell {
-    Write-Step 'Publication de FolderHue.Shell (NativeAOT)'
-    Invoke-Dotnet @(
-        'publish',
-        (Join-Path $repository 'src\FolderHue.Shell'),
-        '-c', $Configuration, '-r', $runtime, '/p:PublishAot=true', '--nologo'
-    ) 'La publication NativeAOT'
-    Write-Ok 'DLL native produite'
+    Write-Step 'FolderHue.Shell (NativeAOT)'
+    & dotnet publish (Join-Path $repository 'src\FolderHue.Shell\FolderHue.Shell.csproj') `
+        -c $Configuration -r $runtime -o $appLayout --nologo
+    if ($LASTEXITCODE -ne 0) { throw "La publication du shell a echoue (code $LASTEXITCODE)." }
+
+    $dll = Join-Path $appLayout 'FolderHue.Shell.dll'
+    if (-not (Test-Path $dll)) { throw "FolderHue.Shell.dll est absent de $appLayout." }
+    Write-Ok ("FolderHue.Shell.dll : {0:N0} Ko" -f ((Get-Item $dll).Length / 1KB))
 }
 
-function Assert-ShellManifestEmbedded {
-    param([string] $SdkBin, [string] $DllPath)
+function Publish-App {
+    <#
+        Publication autonome : le runtime .NET voyage avec l'application. C'est le prix a payer
+        pour qu'un double-clic suffise, sans prerequis a installer. L'ordre compte, l'application
+        etant publiee APRES le shell : elle ecrase les fichiers communs par les siens, et c'est
+        bien FolderHue.Shell.dll, produit par l'etape precedente, qu'on veut conserver.
+    #>
+    Write-Step 'FolderHue.App (autonome)'
+    & dotnet publish (Join-Path $repository 'src\FolderHue.App\FolderHue.App.csproj') `
+        -c $Configuration -r $runtime --self-contained true -o $appLayout --nologo
+    if ($LASTEXITCODE -ne 0) { throw "La publication de l'application a echoue (code $LASTEXITCODE)." }
 
-    Write-Step 'Verification du manifeste embarque dans la DLL'
+    $exe = Join-Path $appLayout 'FolderHue.App.exe'
+    if (-not (Test-Path $exe)) { throw "FolderHue.App.exe est absent de $appLayout." }
 
-    $extracted = Join-Path $artifacts 'embedded.manifest'
-    & (Join-Path $SdkBin 'mt.exe') -nologo "-inputresource:$DllPath;#2" "-out:$extracted" | Out-Null
-
-    if ($LASTEXITCODE -ne 0 -or -not (Test-Path $extracted)) {
-        throw ('La DLL ne contient pas de manifeste d''identite MSIX. ' +
-               'Sans lui, Explorer ne charge pas l''extension et n''affiche aucune erreur.')
-    }
-
-    [xml] $embedded = Get-Content $extracted -Raw
-    if (-not $embedded.assembly.msix) {
-        throw "Le manifeste embarque ne contient pas de bloc <msix>."
-    }
-
-    Remove-Item $extracted -Force
-    Write-Ok "identite embarquee : $($embedded.assembly.msix.packageName)"
+    $size = (Get-ChildItem $appLayout -Recurse -File | Measure-Object -Property Length -Sum).Sum
+    Write-Ok ("artifacts\app : {0:N0} fichiers, {1:N0} Mo" -f `
+        (Get-ChildItem $appLayout -Recurse -File).Count, ($size / 1MB))
 }
 
-function Build-Layout {
-    param([string] $ShellPublish, [string] $AppPublish)
+function Build-Installer {
+    Write-Step 'Installeur Inno Setup'
 
-    Write-Step 'Assemblage de artifacts\package'
-
-    # Un paquet sparse enregistre sur ce dossier verrouille FolderHue.Shell.dll : tant qu'il
-    # est enregistre, la DLL est intouchable, meme Explorateur ferme. On le retire d'abord ;
-    # install-dev.ps1 le remettra.
-    [xml] $appx = Get-Content (Join-Path $repository 'src\FolderHue.Package\AppxManifest.xml') -Raw
-    $registered = Get-AppxPackage -Name $appx.Package.Identity.Name -ErrorAction SilentlyContinue
-    if ($registered) {
-        $registered | Remove-AppxPackage
-        Write-Ok 'paquet precedent desenregistre'
+    $iscc = Get-InnoSetupCompiler
+    if (-not $iscc) {
+        Write-Warn 'Inno Setup est introuvable. Executez .\scripts\setup-prereqs.ps1.'
+        Write-Warn "artifacts\app est pret : l'installeur seul manque."
+        return
     }
 
-    # On vide le dossier au lieu de le supprimer : un terminal ou un Explorateur positionne
-    # dessus suffit a rendre la suppression du dossier lui-meme impossible.
-    New-Item -ItemType Directory -Path $layout -Force | Out-Null
-    Get-ChildItem $layout -Force | Remove-Item -Recurse -Force
+    & $iscc (Join-Path $repository 'installer\FolderHue.iss') /Q
+    if ($LASTEXITCODE -ne 0) { throw "Inno Setup a echoue (code $LASTEXITCODE)." }
 
-    Copy-Item (Join-Path $ShellPublish 'FolderHue.Shell.dll') $layout
+    $setup = Get-ChildItem $artifacts -Filter 'FolderHue-Setup-*.exe' |
+        Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    if (-not $setup) { throw "L'installeur n'a pas ete produit." }
 
-    # L'application et ses dependances gerees, sans les symboles ni la documentation XML.
-    Get-ChildItem $AppPublish -File |
-        Where-Object { $_.Extension -notin @('.pdb', '.xml') } |
-        Copy-Item -Destination $layout
-
-    foreach ($culture in @('fr', 'en')) {
-        $satellite = Join-Path $AppPublish $culture
-        if (Test-Path $satellite) {
-            Copy-Item $satellite (Join-Path $layout $culture) -Recurse -Force
-        }
-    }
-
-    Copy-Item (Join-Path $repository 'src\FolderHue.Package\AppxManifest.xml') $layout
-
-    $assets = Join-Path $layout 'Assets'
-    New-Item -ItemType Directory -Path $assets -Force | Out-Null
-
-    Invoke-App @('--generate-package-assets', $assets) 'La generation des logos du paquet'
-
-    Write-Ok "paquet assemble dans $layout"
+    Write-Ok ("{0} : {1:N0} Mo" -f $setup.Name, ($setup.Length / 1MB))
+    Write-Host ''
+    Write-Host "    $($setup.FullName)" -ForegroundColor White
 }
 
-function Initialize-IconLibrary {
-    Write-Step 'Pre-generation de la palette d''icones'
+# --- Deroulement -----------------------------------------------------------
 
-    Invoke-App @('--pregenerate') 'La pre-generation des icones'
-
-    Write-Ok 'palette prete'
-}
-
-function Build-FullPackage {
-    param([string] $SdkBin)
-
-    Write-Step 'MSIX complet'
-
-    # AllowExternalContent n'a de sens que pour le paquet sparse de developpement.
-    $staging = Join-Path $artifacts 'msix-staging'
-    New-Item -ItemType Directory -Path $staging -Force | Out-Null
-    Get-ChildItem $staging -Force | Remove-Item -Recurse -Force
-    # Copie entree par entree : Copy-Item avec un joker et -Recurse aplatit les sous-dossiers,
-    # et le paquet se retrouverait sans son dossier Assets.
-    Get-ChildItem $layout -Force | ForEach-Object {
-        Copy-Item $_.FullName -Destination $staging -Recurse -Force
-    }
-
-    $manifestPath = Join-Path $staging 'AppxManifest.xml'
-    [xml] $manifest = Get-Content $manifestPath -Raw
-    $external = $manifest.Package.Properties.ChildNodes |
-        Where-Object { $_.LocalName -eq 'AllowExternalContent' }
-
-    if ($external) {
-        $manifest.Package.Properties.RemoveChild($external) | Out-Null
-        $manifest.Save($manifestPath)
-    }
-
-    $msix = Join-Path $artifacts 'FolderHue.msix'
-    if (Test-Path $msix) { Remove-Item $msix -Force }
-
-    & (Join-Path $SdkBin 'makeappx.exe') pack /d $staging /p $msix /o
-    if ($LASTEXITCODE -ne 0) { throw "makeappx a echoue (code $LASTEXITCODE)." }
-
-    Write-Ok "paquet : $msix"
-
-    if ($CertificateThumbprint) {
-        & (Join-Path $SdkBin 'signtool.exe') sign /fd SHA256 /sha1 $CertificateThumbprint `
-            /tr http://timestamp.digicert.com /td SHA256 $msix
-        if ($LASTEXITCODE -ne 0) { throw "signtool a echoue (code $LASTEXITCODE)." }
-        Write-Ok 'paquet signe'
-    }
-    else {
-        Write-Host '    !    paquet non signe. Le Microsoft Store le signera, ou fournissez -CertificateThumbprint.' -ForegroundColor Yellow
-    }
-}
-
-# --- Enchainement ----------------------------------------------------------
-
-$sdkBin = Initialize-BuildTools
-Assert-IdentityConsistency
+Initialize-BuildTools
+Assert-Consistency
 
 New-Item -ItemType Directory -Path $artifacts -Force | Out-Null
+if (Test-Path $appLayout) { Remove-Item $appLayout -Recurse -Force }
+New-Item -ItemType Directory -Path $appLayout -Force | Out-Null
 
-Build-Solution
-Test-Core
-Publish-App
+if (-not $SkipTests) { Invoke-Tests } else { Write-Warn 'tests ignores' }
+
 Publish-Shell
+Publish-App
 
-$shellPublish = Join-Path $repository "src\FolderHue.Shell\bin\$Configuration\net8.0-windows\$runtime\publish"
-$appPublish = Join-Path $repository "src\FolderHue.App\bin\$Configuration\net8.0-windows\$runtime\publish"
-
-Assert-ShellManifestEmbedded $sdkBin (Join-Path $shellPublish 'FolderHue.Shell.dll')
-Build-Layout $shellPublish $appPublish
-Initialize-IconLibrary
-
-if ($FullPackage) {
-    Build-FullPackage $sdkBin
-}
+if (-not $NoInstaller) { Build-Installer } else { Write-Warn 'installeur ignore' }
 
 Write-Host ''
-Write-Step 'Build termine. Etape suivante : .\scripts\install-dev.ps1'
+Write-Ok 'termine'

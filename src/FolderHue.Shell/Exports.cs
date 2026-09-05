@@ -5,24 +5,24 @@ using FolderHue.Shell.Commands;
 namespace FolderHue.Shell;
 
 /// <summary>
-/// Points d'entree natifs exportes par la DLL.
+/// The native entry points the DLL exports.
 /// </summary>
 /// <remarks>
-/// <c>[UnmanagedCallersOnly]</c> produit de vrais exports natifs dans l'image NativeAOT : c'est ce
-/// qui remplace l'enregistrement par <c>RegAsm</c>, impossible en AOT (CLAUDE.md §2.1).
+/// <c>[UnmanagedCallersOnly]</c> emits real native exports in the NativeAOT image: that is what
+/// replaces registration through <c>RegAsm</c>, which AOT cannot do (CLAUDE.md 2.1).
 /// </remarks>
 internal static class Exports
 {
     /// <summary>
-    /// Rend la fabrique de classes du CLSID demande.
+    /// Returns the class factory for the requested CLSID.
     /// </summary>
-    /// <param name="rclsid">CLSID demande par COM.</param>
-    /// <param name="riid">Interface demandee, en pratique <c>IClassFactory</c>.</param>
-    /// <param name="ppv">Recoit le pointeur d'interface.</param>
-    /// <returns>Un HRESULT.</returns>
+    /// <param name="rclsid">CLSID requested by COM.</param>
+    /// <param name="riid">Interface requested, in practice <c>IClassFactory</c>.</param>
+    /// <param name="ppv">Receives the interface pointer.</param>
+    /// <returns>An HRESULT.</returns>
     /// <remarks>
-    /// Win32 : <c>DllGetClassObject</c>, combaseapi.h.
-    /// Doc : https://learn.microsoft.com/windows/win32/api/combaseapi/nf-combaseapi-dllgetclassobject
+    /// Win32: <c>DllGetClassObject</c>, combaseapi.h.
+    /// Docs: https://learn.microsoft.com/windows/win32/api/combaseapi/nf-combaseapi-dllgetclassobject
     /// </remarks>
     [UnmanagedCallersOnly(EntryPoint = "DllGetClassObject")]
     public static unsafe int DllGetClassObject(Guid* rclsid, Guid* riid, IntPtr* ppv)
@@ -41,8 +41,8 @@ internal static class Exports
 
         try
         {
-            // Le serveur n'expose qu'une classe : la commande moderne. Elle est rendue par le
-            // menu direct de Windows 11 comme par le menu classique.
+            // The server exposes a single class, the root command. It is rendered by the classic
+            // menu, which is where a registry verb appears on both Windows 10 and 11.
             Func<object>? create = null;
 
             if (*rclsid == Guids.RootCommandClsid)
@@ -52,7 +52,7 @@ internal static class Exports
 
             if (create is null)
             {
-                // CLSID inconnu : c'est le message que COM attend pour passer au serveur suivant.
+                // Unknown CLSID: this is what COM expects in order to move on to the next server.
                 return unchecked((int)0x80040154); // REGDB_E_CLASSNOTREG
             }
 
@@ -62,22 +62,22 @@ internal static class Exports
         }
         catch (Exception e)
         {
-            // Aucune exception ne doit franchir la frontiere native : Explorer tomberait.
-            ShellServices.Log.Error("DllGetClassObject a echoue.", e);
+            // No exception may cross the native boundary: Explorer would come down with it.
+            ShellServices.Log.Error("DllGetClassObject failed.", e);
             return HResult.Fail;
         }
     }
 
     /// <summary>
-    /// Indique si la DLL peut etre dechargee.
+    /// Indicates whether the DLL may be unloaded.
     /// </summary>
-    /// <returns>Toujours <c>S_FALSE</c>.</returns>
+    /// <returns>Always <c>S_FALSE</c>.</returns>
     /// <remarks>
-    /// Win32 : <c>DllCanUnloadNow</c>, combaseapi.h.
-    /// Doc : https://learn.microsoft.com/windows/win32/api/combaseapi/nf-combaseapi-dllcanunloadnow
+    /// Win32: <c>DllCanUnloadNow</c>, combaseapi.h.
+    /// Docs: https://learn.microsoft.com/windows/win32/api/combaseapi/nf-combaseapi-dllcanunloadnow
     /// <para>
-    /// Le runtime NativeAOT ne se reinitialise pas apres un dechargement : on refuse donc
-    /// systematiquement. C'est le comportement recommande pour un serveur COM gere.
+    /// The NativeAOT runtime does not reinitialise after an unload, so we always refuse. That is
+    /// the recommended behaviour for a managed COM server.
     /// </para>
     /// </remarks>
     [UnmanagedCallersOnly(EntryPoint = "DllCanUnloadNow")]

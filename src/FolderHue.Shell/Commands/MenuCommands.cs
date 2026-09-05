@@ -7,22 +7,27 @@ using FolderHue.Shell.Com;
 namespace FolderHue.Shell.Commands;
 
 /// <summary>
-/// Commande racine « FolderHue ».
+/// The root "FolderHue" command.
 /// </summary>
 /// <remarks>
-/// C'est la seule classe exposee par le CLSID du serveur COM.
+/// This is the only class the COM server's CLSID exposes.
 /// <para>
-/// ⚠️ <b>Le sous-menu doit tenir en 16 elements, separateurs COMPRIS.</b> Ce commentaire a
-/// longtemps affirme l'inverse — « les separateurs ne comptent pas » — et c'etait faux. Passe a
-/// 17 elements en ajoutant « Couleur d'origine », l'Explorateur n'a pas tronque le sous-menu :
-/// il a fait disparaitre <b>l'entree racine entiere</b>, logo compris, sans le moindre message.
-/// Le serveur COM continuait de s'activer normalement (<c>tools/probe-shell.ps1</c>), ce qui rend
-/// la panne indiscernable d'un probleme d'enregistrement.
+/// ⚠️ <b>The submenu must fit in 16 items, separators INCLUDED.</b> This comment long claimed the
+/// opposite — "separators do not count" — and it was false. Taken to 17 items by adding
+/// "Original color", Explorer did not truncate the submenu: it made <b>the entire root entry</b>
+/// disappear, logo and all, without a single message. The COM server kept activating normally
+/// (<c>tools/probe-shell.ps1</c>), which makes the failure indistinguishable from a registration
+/// problem.
 /// </para>
 /// <para>
-/// Decompte actuel, exactement 16 : 12 couleurs + « Couleur d'origine » + un separateur +
-/// « Embleme » + « Reinitialiser ». Il n'y a <b>plus de marge</b> : toute entree supplementaire
-/// impose d'en retirer une autre ou d'imbriquer davantage (CLAUDE.md §4.4).
+/// Current count, exactly 16: 12 colors + "Original color" + one separator + "Emblem" + "Reset".
+/// There is <b>no headroom left</b>: any extra entry means removing another or nesting further
+/// (CLAUDE.md 4.4).
+/// </para>
+/// <para>
+/// ⚠️ That ceiling was measured on the packaged MSIX verb. It has <b>not</b> been re-verified
+/// since the move to a classic registry verb; nothing says the two share the same limit. Measure
+/// again with <c>tools/probe-menu.ps1</c> before relying on either answer.
 /// </para>
 /// </remarks>
 [GeneratedComClass]
@@ -32,7 +37,7 @@ internal sealed partial class RootCommand : ExplorerCommandBase
     protected override string Title => Loc.Get("Menu_Root");
 
     /// <inheritdoc/>
-    /// <remarks>Le logo de l'application, aux couleurs de la marque.</remarks>
+    /// <remarks>The application logo, in the brand colors.</remarks>
     protected override string? IconResource => ShellServices.Paths.BrandLogoPath + ",0";
 
     /// <inheritdoc/>
@@ -48,15 +53,15 @@ internal sealed partial class RootCommand : ExplorerCommandBase
             commands.Add(new ColorCommand(color));
         }
 
-        // « Couleur d'origine » se choisit comme une teinte, en fin de palette. Elle rend au
-        // dossier son icone d'origine en conservant son embleme : reposer la couleur ne doit pas
-        // effacer le marqueur de statut, exactement comme l'inverse (CLAUDE.md §4.3). Sans
-        // embleme, Apply retombe de lui-meme sur une reinitialisation.
+        // "Original color" is chosen like any hue, at the end of the palette. It gives the folder
+        // its original icon back while keeping its emblem: putting the color back must not erase
+        // the status marker, exactly as the reverse holds (CLAUDE.md 4.3). With no emblem, Apply
+        // falls back to a reset on its own.
         commands.Add(new ColorCommand(PaletteCatalog.Neutral));
 
-        // Un seul separateur, et non deux : il isole le bloc des couleurs des deux actions qui
-        // suivent. Le second, jadis place avant « Reinitialiser », a ete supprime pour tenir dans
-        // les 16 elements — voir l'avertissement en tete de classe.
+        // One separator, not two: it isolates the block of colors from the two actions that
+        // follow. The second one, once placed before "Reset", was removed to stay within the 16
+        // items — see the warning at the top of this class.
         commands.Add(new SeparatorCommand());
         commands.Add(new EmblemMenuCommand());
         commands.Add(new ResetCommand());
@@ -66,9 +71,9 @@ internal sealed partial class RootCommand : ExplorerCommandBase
 }
 
 /// <summary>
-/// Applique une teinte de la palette.
+/// Applies one hue from the palette.
 /// </summary>
-/// <param name="color">La teinte representee par cette entree de menu.</param>
+/// <param name="color">The hue this menu entry stands for.</param>
 [GeneratedComClass]
 internal sealed partial class ColorCommand(FolderColor color) : ExplorerCommandBase
 {
@@ -79,14 +84,13 @@ internal sealed partial class ColorCommand(FolderColor color) : ExplorerCommandB
 
     /// <inheritdoc/>
     /// <remarks>
-    /// La declinaison du logo dans cette teinte. Simple concatenation de chaines : aucun acces
-    /// disque, meme pour verifier que le fichier existe. L'Explorateur appelle cette propriete a
-    /// chaque ouverture du menu.
+    /// The logo tinted with this hue. Plain string concatenation: no disk access, not even to
+    /// check that the file exists. Explorer reads this property every time the menu opens.
     /// <para>
-    /// Exception faite de « Couleur d'origine », dont la puce est <c>neutral.ico</c> — l'icone de
-    /// dossier reelle de la machine — et non une declinaison du logo. La regle du menu est qu'une
-    /// puce ressemble a l'icone que le dossier prendra (CLAUDE.md §9) ; une declinaison neutre
-    /// n'aurait rien teinte et serait restee orange, annoncant une couleur au lieu de son retrait.
+    /// "Original color" is the exception: its chip is <c>neutral.ico</c> — the machine's real
+    /// folder icon — rather than a tinted logo. The menu's rule is that a chip looks like the icon
+    /// the folder will take (CLAUDE.md 9); a neutral tint would have changed nothing and stayed
+    /// orange, announcing a color instead of its removal.
     /// </para>
     /// </remarks>
     protected override string? IconResource => _color.IsNeutral
@@ -99,7 +103,7 @@ internal sealed partial class ColorCommand(FolderColor color) : ExplorerCommandB
 }
 
 /// <summary>
-/// Entree « Embleme », qui ouvre le sous-menu imbrique des marqueurs de statut.
+/// The "Emblem" entry, which opens the nested submenu of status markers.
 /// </summary>
 [GeneratedComClass]
 internal sealed partial class EmblemMenuCommand : ExplorerCommandBase
@@ -108,7 +112,7 @@ internal sealed partial class EmblemMenuCommand : ExplorerCommandBase
     protected override string Title => Loc.Get("Menu_Emblem");
 
     /// <inheritdoc/>
-    /// <remarks>La pastille neutre, qui sert de symbole generique de marqueur.</remarks>
+    /// <remarks>The neutral badge, standing in as a generic marker symbol.</remarks>
     protected override string? IconResource
         => ShellServices.Paths.EmblemChipPath(Emblem.NoneId) + ",0";
 
@@ -130,9 +134,9 @@ internal sealed partial class EmblemMenuCommand : ExplorerCommandBase
 }
 
 /// <summary>
-/// Applique un embleme en conservant la couleur en place.
+/// Applies an emblem while keeping the color already in place.
 /// </summary>
-/// <param name="emblem">L'embleme represente par cette entree de menu.</param>
+/// <param name="emblem">The emblem this menu entry stands for.</param>
 [GeneratedComClass]
 internal sealed partial class EmblemCommand(Emblem emblem) : ExplorerCommandBase
 {
@@ -142,21 +146,21 @@ internal sealed partial class EmblemCommand(Emblem emblem) : ExplorerCommandBase
     protected override string Title => Loc.Get(_emblem.ResourceKey);
 
     /// <inheritdoc/>
-    /// <remarks>La pastille de ce marqueur, dessinee en grand pour rester lisible a 16 px.</remarks>
+    /// <remarks>This marker's badge, drawn large so that it stays legible at 16 px.</remarks>
     protected override string? IconResource
         => ShellServices.Paths.EmblemChipPath(_emblem.Id) + ",0";
 
     /// <inheritdoc/>
     /// <remarks>
-    /// La couleur de chaque dossier est conservee. Un dossier jamais colorise garde la sienne :
-    /// poser un marqueur ne doit pas le teindre au passage.
+    /// Each folder's color is preserved. A folder that was never colored keeps its own: placing a
+    /// marker must not tint it along the way.
     /// </remarks>
     protected override void Execute(IReadOnlyList<string> paths)
         => ShellServices.ApplyEmblem(paths, _emblem.Id);
 }
 
 /// <summary>
-/// Retire la colorisation et restaure l'etat d'origine du dossier.
+/// Removes the coloring and restores the folder's original state.
 /// </summary>
 [GeneratedComClass]
 internal sealed partial class ResetCommand : ExplorerCommandBase
@@ -165,7 +169,7 @@ internal sealed partial class ResetCommand : ExplorerCommandBase
     protected override string Title => Loc.Get("Menu_Reset");
 
     /// <inheritdoc/>
-    /// <remarks>L'icone de dossier d'origine : exactement ce que l'action rend.</remarks>
+    /// <remarks>The original folder icon: exactly what the action gives back.</remarks>
     protected override string? IconResource
         => ShellServices.Paths.IconPath(PaletteCatalog.Neutral.Id, Emblem.NoneId) + ",0";
 
@@ -175,10 +179,12 @@ internal sealed partial class ResetCommand : ExplorerCommandBase
 }
 
 /// <summary>
-/// Separateur visuel du menu.
+/// A visual separator in the menu.
 /// </summary>
 /// <remarks>
-/// Les separateurs ne comptent pas dans la limite de 16 elements par handler.
+/// ⚠️ A separator <b>does</b> count towards the 16-item ceiling. This comment used to say the
+/// opposite, contradicting the warning on <see cref="RootCommand"/> in the same file — and the
+/// measurement sided with the warning.
 /// </remarks>
 [GeneratedComClass]
 internal sealed partial class SeparatorCommand : ExplorerCommandBase

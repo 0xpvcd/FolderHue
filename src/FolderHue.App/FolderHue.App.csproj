@@ -12,14 +12,33 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>FolderHue.App</AssemblyName>
     <RootNamespace>FolderHue.App</RootNamespace>
+    <!--
+      Icone de l'executable. Le fichier est versionne parce qu'il est necessaire AVANT la
+      compilation : on ne peut pas le produire avec l'application qu'on est en train de batir.
+      Il se regenere par le commutateur « export-icon » de l'application quand le logo change
+      (scripts/build.ps1 verifie sa presence).
+    -->
+    <ApplicationIcon>..\..\installer\FolderHue.ico</ApplicationIcon>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <SatelliteResourceLanguages>fr;en</SatelliteResourceLanguages>
+    <SatelliteResourceLanguages>fr</SatelliteResourceLanguages>
     <!-- Impose par WFAC010 : le DPI se configure ici et non dans app.manifest. -->
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\FolderHue.Core\FolderHue.Core.csproj" />
+  </ItemGroup>
+
+  <!--
+    Le logo, embarque depuis logo/ et non recopie ici : une copie divergerait en silence.
+    LogicalName est explicite parce que les fichiers vivent hors du projet, ou le nom deduit
+    par MSBuild n'est pas garanti. Il doit rester aligne sur Icons/LogoArtwork.cs.
+  -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\logo\Logo_FoldersHue.png"
+                      LogicalName="FolderHue.App.Icons.Logo_FoldersHue.png" />
+    <EmbeddedResource Include="..\..\logo\Logo_Uni_FoldersHue.png"
+                      LogicalName="FolderHue.App.Icons.Logo_Uni_FoldersHue.png" />
   </ItemGroup>
 
 </Project>

@@ -5,13 +5,13 @@ using FolderHue.Shell.Commands;
 namespace FolderHue.Shell.Com;
 
 /// <summary>
-/// Fabrique la commande racine pour le compte de COM.
+/// Creates the root command on COM's behalf.
 /// </summary>
 /// <remarks>
-/// C'est l'objet que <c>DllGetClassObject</c> rend a l'Explorateur. Il ne fait rien d'autre
-/// qu'appeler la fabrique qu'on lui a confiee : aucun travail couteux au chargement de la DLL.
-/// Le serveur expose deux classes — la commande moderne et le handler herite — d'ou le
-/// parametrage plutot qu'un type code en dur.
+/// This is the object <c>DllGetClassObject</c> hands to Explorer. It does nothing but call the
+/// factory it was given: no expensive work when the DLL loads. The server exposes a single class
+/// today, but the factory stays parameterised rather than hard-coding a type — that is what made
+/// removing the second class a one-line change.
 /// </remarks>
 [GeneratedComClass]
 internal sealed partial class ClassFactory(Func<object> create) : IClassFactory
@@ -23,7 +23,7 @@ internal sealed partial class ClassFactory(Func<object> create) : IClassFactory
     {
         ppvObject = IntPtr.Zero;
 
-        // L'agregation COM n'a pas de sens pour une extension de menu contextuel.
+        // COM aggregation makes no sense for a context menu extension.
         if (pUnkOuter != IntPtr.Zero)
         {
             return HResult.ClassNoAggregation;
@@ -35,7 +35,7 @@ internal sealed partial class ClassFactory(Func<object> create) : IClassFactory
         }
         catch (Exception e)
         {
-            ShellServices.Log.Error("CreateInstance a echoue.", e);
+            ShellServices.Log.Error("CreateInstance failed.", e);
             return HResult.Fail;
         }
     }
@@ -43,8 +43,8 @@ internal sealed partial class ClassFactory(Func<object> create) : IClassFactory
     /// <inheritdoc/>
     public int LockServer(bool fLock)
     {
-        // La DLL reste chargee tant qu'Explorer le decide : DllCanUnloadNow retourne toujours
-        // S_FALSE, il n'y a donc aucun compteur a tenir ici.
+        // The DLL stays loaded for as long as Explorer decides: DllCanUnloadNow always returns
+        // S_FALSE, so there is no counter to keep here.
         return HResult.Ok;
     }
 }

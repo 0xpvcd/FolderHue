@@ -5,33 +5,33 @@ using FolderHue.Shell.Com;
 namespace FolderHue.Shell.Commands;
 
 /// <summary>
-/// Base commune aux entrees du menu contextuel.
+/// Common base for the context menu entries.
 /// </summary>
 /// <remarks>
-/// Chaque methode est enveloppee dans un <c>try/catch</c> : une exception non geree traversant la
-/// frontiere COM ferait tomber <c>explorer.exe</c> (CLAUDE.md §6.5).
+/// Every method is wrapped in a <c>try/catch</c>: an unhandled exception crossing the COM boundary
+/// would bring <c>explorer.exe</c> down (CLAUDE.md 6.5).
 /// </remarks>
 internal abstract partial class ExplorerCommandBase : IExplorerCommand
 {
-    /// <summary>Libelle affiche dans le menu. Doit etre immediat, sans acces disque.</summary>
+    /// <summary>Label shown in the menu. Must be instant, with no disk access.</summary>
     protected abstract string Title { get; }
 
     /// <summary>
-    /// Ressource d'icone au format <c>chemin,index</c>, ou <see langword="null"/> pour aucune.
+    /// Icon resource in <c>path,index</c> form, or <see langword="null"/> for none.
     /// </summary>
     protected virtual string? IconResource => null;
 
-    /// <summary>Drapeaux de la commande.</summary>
+    /// <summary>The command's flags.</summary>
     protected virtual ExplorerCommandFlags Flags => ExplorerCommandFlags.Default;
 
-    /// <summary>Execute l'action de la commande sur les dossiers selectionnes.</summary>
-    /// <param name="paths">Les dossiers selectionnes, deja resolus.</param>
+    /// <summary>Runs the command's action on the selected folders.</summary>
+    /// <param name="paths">The selected folders, already resolved.</param>
     protected virtual void Execute(IReadOnlyList<string> paths)
     {
     }
 
-    /// <summary>Sous-commandes de la commande, si elle en a.</summary>
-    /// <returns>Les commandes filles, ou une liste vide.</returns>
+    /// <summary>The command's subcommands, when it has any.</summary>
+    /// <returns>The child commands, or an empty list.</returns>
     protected virtual IReadOnlyList<object> CreateSubCommands() => [];
 
     /// <inheritdoc/>
@@ -91,8 +91,8 @@ internal abstract partial class ExplorerCommandBase : IExplorerCommand
     {
         try
         {
-            // L'entree n'a de sens que sur des dossiers reels : ni sur un fichier, ni sur
-            // « Ce PC », ni sur une bibliotheque (CLAUDE.md §4.4).
+            // The entry only makes sense on real folders: not on a file, not on "This PC", not
+            // on a library (CLAUDE.md 4.4).
             pCmdState = ShellSelection.IsFileSystemFolderSelection(psiItemArray)
                 ? (uint)ExplorerCommandState.Enabled
                 : (uint)ExplorerCommandState.Hidden;
@@ -101,7 +101,7 @@ internal abstract partial class ExplorerCommandBase : IExplorerCommand
         }
         catch (Exception e)
         {
-            ShellServices.Log.Error("GetState a echoue.", e);
+            ShellServices.Log.Error("GetState failed.", e);
             pCmdState = (uint)ExplorerCommandState.Hidden;
             return HResult.Ok;
         }
@@ -110,7 +110,7 @@ internal abstract partial class ExplorerCommandBase : IExplorerCommand
     /// <inheritdoc/>
     public int Invoke(IntPtr psiItemArray, IntPtr pbc)
     {
-        // Filet de securite global : c'est ici qu'une exception ferait tomber l'Explorateur.
+        // Global safety net: this is where an exception would bring Explorer down.
         try
         {
             List<string> paths = ShellSelection.GetPaths(psiItemArray);
@@ -124,7 +124,7 @@ internal abstract partial class ExplorerCommandBase : IExplorerCommand
         }
         catch (Exception e)
         {
-            ShellServices.Log.Error($"Invoke a echoue pour « {Title} ».", e);
+            ShellServices.Log.Error($"Invoke failed for \"{Title}\".", e);
             return HResult.Fail;
         }
     }
@@ -157,7 +157,7 @@ internal abstract partial class ExplorerCommandBase : IExplorerCommand
         }
         catch (Exception e)
         {
-            ShellServices.Log.Error($"EnumSubCommands a echoue pour « {Title} ».", e);
+            ShellServices.Log.Error($"EnumSubCommands failed for \"{Title}\".", e);
             return HResult.Fail;
         }
     }

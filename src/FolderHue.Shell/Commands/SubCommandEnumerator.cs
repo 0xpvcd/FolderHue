@@ -5,13 +5,13 @@ using FolderHue.Shell.Com;
 namespace FolderHue.Shell.Commands;
 
 /// <summary>
-/// Enumere les sous-commandes d'un menu en cascade.
+/// Enumerates the subcommands of a cascading menu.
 /// </summary>
 /// <remarks>
-/// C'est ce que consomme l'Explorateur pour construire le sous-menu, aussi bien le menu direct de
-/// Windows 11 que le menu classique de Windows 10.
+/// This is what Explorer consumes to build the submenu, in the classic menu of Windows 10 and 11
+/// alike.
 /// </remarks>
-/// <param name="commands">Les commandes filles, dans l'ordre d'affichage.</param>
+/// <param name="commands">The child commands, in display order.</param>
 [GeneratedComClass]
 internal sealed partial class SubCommandEnumerator(IReadOnlyList<object> commands) : IEnumExplorerCommand
 {
@@ -19,9 +19,20 @@ internal sealed partial class SubCommandEnumerator(IReadOnlyList<object> command
     private int _position;
 
     /// <inheritdoc/>
-    public int Next(uint celt, IntPtr pUICommand, out uint pceltFetched)
+    public int Next(uint celt, IntPtr pUICommand, IntPtr pceltFetched)
     {
-        pceltFetched = 0;
+        // pceltFetched may be NULL when the caller asks for a single element, so the write only
+        // happens after a check. This is exactly how Explorer calls us, and writing without
+        // checking made Next fail and the submenu vanish (see ComInterop.cs).
+        static void Report(IntPtr destination, uint value)
+        {
+            if (destination != IntPtr.Zero)
+            {
+                Marshal.WriteInt32(destination, (int)value);
+            }
+        }
+
+        Report(pceltFetched, 0);
 
         if (pUICommand == IntPtr.Zero)
         {
@@ -38,8 +49,8 @@ internal sealed partial class SubCommandEnumerator(IReadOnlyList<object> command
 
                 if (hr < 0 || command == IntPtr.Zero)
                 {
-                    // On saute la commande fautive plutot que d'interrompre tout le menu.
-                    ShellServices.Log.Warn($"Sous-commande {_position} inexposable (HRESULT 0x{hr:X8}).");
+                    // Skip the offending command rather than break the whole menu.
+                    ShellServices.Log.Warn($"Subcommand {_position} could not be exposed (HRESULT 0x{hr:X8}).");
                     _position++;
                     continue;
                 }
@@ -49,14 +60,14 @@ internal sealed partial class SubCommandEnumerator(IReadOnlyList<object> command
                 _position++;
             }
 
-            pceltFetched = produced;
+            Report(pceltFetched, produced);
 
-            // S_FALSE signale que l'enumeration a produit moins d'elements que demande.
+            // S_FALSE signals that the enumeration produced fewer elements than requested.
             return produced == celt ? HResult.Ok : HResult.False;
         }
         catch (Exception e)
         {
-            ShellServices.Log.Error("Next a echoue lors de l'enumeration des sous-commandes.", e);
+            ShellServices.Log.Error("Next failed while enumerating the subcommands.", e);
             return HResult.Fail;
         }
     }
@@ -87,7 +98,7 @@ internal sealed partial class SubCommandEnumerator(IReadOnlyList<object> command
         }
         catch (Exception e)
         {
-            ShellServices.Log.Error("Clone a echoue.", e);
+            ShellServices.Log.Error("Clone failed.", e);
             return HResult.Fail;
         }
     }

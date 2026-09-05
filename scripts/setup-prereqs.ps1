@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Installe et vérifie les prérequis de build de FolderHue.
 
@@ -7,12 +7,11 @@
       1. Le SDK .NET 8 (tous les projets).
       2. La toolchain C++ (MSVC + Windows SDK) — exigée par NativeAOT pour lier
          FolderHue.Shell.dll (cf. CLAUDE.md §2.1).
-      3. Le mode développeur Windows — exigé par Add-AppxPackage -Register pour
-         enregistrer le sparse package en dev (cf. CLAUDE.md §4.5).
+      3. Inno Setup 6 — qui produit FolderHue-Setup.exe.
 
-    Ce script installe (1) et (2) via winget. Il se contente de *détecter* (3) :
-    activer le mode développeur écrirait dans HKLM, ce que CLAUDE.md §6.4 interdit.
-    Aucun contrôle de signature n'est modifié (CLAUDE.md §11).
+    Les trois s'installent par winget. Le mode développeur Windows n'est plus requis :
+    il ne servait qu'au déploiement MSIX, abandonné au profit d'un enregistrement
+    classique sous HKEY_CURRENT_USER.
 
 .PARAMETER SkipBuildTools
     N'installe pas Visual Studio Build Tools (téléchargement de plusieurs Go).
@@ -83,24 +82,27 @@ else {
     Write-Ok 'Build Tools installés.'
 }
 
-# --- 3. Mode développeur (détection seule) ---------------------------------
+# --- 3. Inno Setup (production de l'installeur) -----------------------------
 
-Write-Step 'Mode développeur Windows'
+Write-Step 'Inno Setup 6'
 
-$devMode = 0
-try {
-    $devMode = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock' `
-                                 -ErrorAction Stop).AllowDevelopmentWithoutDevLicense
-}
-catch { $devMode = 0 }
+# winget, sans élévation, installe Inno Setup pour l'utilisateur seul : les trois
+# emplacements sont donc à essayer.
+$iscc = @(
+    "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe",
+    "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+    "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
+) | Where-Object { Test-Path $_ } | Select-Object -First 1
 
-if ($devMode -eq 1) {
-    Write-Ok 'activé.'
+if ($iscc) {
+    Write-Ok "déjà présent : $iscc"
 }
 else {
-    Write-Warn 'désactivé — scripts\install-dev.ps1 échouera.'
-    Write-Host '    Activez-le : Paramètres > Système > Pour les développeurs > Mode développeur.'
-    Write-Host '    (Ce script ne le fait pas : cela écrirait dans HKLM, interdit par CLAUDE.md §6.4.)'
+    Write-Host "    Installation de JRSoftware.InnoSetup (une élévation UAC peut être demandée)..."
+    winget install --id JRSoftware.InnoSetup --exact --silent `
+        --accept-source-agreements --accept-package-agreements
+    if ($LASTEXITCODE -ne 0) { throw "winget a échoué pour Inno Setup (code $LASTEXITCODE)." }
+    Write-Ok 'Inno Setup installé.'
 }
 
 Write-Host ''

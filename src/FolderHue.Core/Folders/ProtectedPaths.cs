@@ -4,34 +4,34 @@ using FolderHue.Core.Storage;
 namespace FolderHue.Core.Folders;
 
 /// <summary>
-/// Fournit la liste des dossiers connus du systeme a proteger.
+/// Supplies the list of well-known system folders to protect.
 /// </summary>
 /// <remarks>
-/// L'interface existe pour que les tests puissent injecter une liste fixe plutot que d'interroger
-/// le shell de la machine (CLAUDE.md §8).
+/// The interface exists so that tests can inject a fixed list rather than querying the machine's
+/// shell (CLAUDE.md 8).
 /// </remarks>
 public interface IKnownFolderProvider
 {
     /// <summary>
-    /// Dossiers proteges en tant que tels : seul le dossier lui-meme est refuse, pas son contenu.
+    /// Folders protected as themselves: only the folder is refused, not what it contains.
     /// </summary>
-    /// <returns>Des chemins absolus. Les entrees vides ou non resolues sont ignorees.</returns>
+    /// <returns>Absolute paths. Empty or unresolved entries are ignored.</returns>
     IReadOnlyList<string> GetExactProtectedFolders();
 
     /// <summary>
-    /// Dossiers proteges avec toute leur descendance.
+    /// Folders protected along with everything beneath them.
     /// </summary>
-    /// <returns>Des chemins absolus. Les entrees vides ou non resolues sont ignorees.</returns>
+    /// <returns>Absolute paths. Empty or unresolved entries are ignored.</returns>
     IReadOnlyList<string> GetProtectedSubtrees();
 }
 
 /// <summary>
-/// Resout les dossiers proteges de la machine courante via <c>SHGetKnownFolderPath</c>.
+/// Resolves the current machine's protected folders through <c>SHGetKnownFolderPath</c>.
 /// </summary>
 [SupportedOSPlatform("windows")]
 public sealed class KnownFolderProvider : IKnownFolderProvider
 {
-    // KNOWNFOLDERID, KnownFolders.h. Doc : https://learn.microsoft.com/windows/win32/shell/knownfolderid
+    // KNOWNFOLDERID, KnownFolders.h. Docs: https://learn.microsoft.com/windows/win32/shell/knownfolderid
     private static readonly Guid Desktop = new("B4BFCC3A-DB2C-424C-B029-7FE99A87C641");
     private static readonly Guid Documents = new("FDD39AD0-238F-46AF-ADB4-6C85480369C7");
     private static readonly Guid Downloads = new("374DE290-123F-4565-9164-39C4925E467B");
@@ -81,64 +81,64 @@ public sealed class KnownFolderProvider : IKnownFolderProvider
 }
 
 /// <summary>
-/// Verdict rendu sur un dossier candidat a la colorisation.
+/// Verdict on a folder proposed for coloring.
 /// </summary>
-/// <param name="IsProtected"><see langword="true"/> si le dossier doit etre refuse.</param>
+/// <param name="IsProtected"><see langword="true"/> when the folder must be refused.</param>
 /// <param name="ReasonKey">
-/// Cle de <c>Strings.resx</c> expliquant le refus, ou <see langword="null"/> si le dossier est
+/// Key in <c>Strings.resx</c> explaining the refusal, or <see langword="null"/> when the folder is
 /// acceptable.
 /// </param>
 public readonly record struct ProtectionResult(bool IsProtected, string? ReasonKey)
 {
-    /// <summary>Le dossier est acceptable.</summary>
+    /// <summary>The folder is acceptable.</summary>
     public static ProtectionResult Allowed { get; } = new(false, null);
 
-    /// <summary>Construit un refus.</summary>
-    /// <param name="reasonKey">Cle de ressource expliquant le refus.</param>
-    /// <returns>Le verdict correspondant.</returns>
+    /// <summary>Builds a refusal.</summary>
+    /// <param name="reasonKey">Resource key explaining the refusal.</param>
+    /// <returns>The matching verdict.</returns>
     public static ProtectionResult Denied(string reasonKey) => new(true, reasonKey);
 }
 
 /// <summary>
-/// Applique la liste d'exclusion : les dossiers que l'application ne doit jamais modifier.
+/// Enforces the exclusion list: the folders the application must never modify.
 /// </summary>
 /// <remarks>
-/// Cette liste n'est pas negociable (CLAUDE.md §6.2). Elle couvre les arborescences systeme, les
-/// dossiers connus de l'utilisateur, les racines de volume, les points de reanalyse (jonctions et
-/// liens symboliques) et nos propres dossiers de travail.
+/// This list is not negotiable (CLAUDE.md 6.2). It covers the system trees, the user's known
+/// folders, volume roots, reparse points (junctions and symbolic links) and our own working
+/// directories.
 /// </remarks>
 [SupportedOSPlatform("windows")]
 public sealed class ProtectedPaths
 {
-    /// <summary>Le chemin est vide ou syntaxiquement invalide.</summary>
+    /// <summary>The path is empty or syntactically invalid.</summary>
     public const string ReasonInvalidPath = "Protection_InvalidPath";
 
-    /// <summary>Le dossier n'existe pas.</summary>
+    /// <summary>The folder does not exist.</summary>
     public const string ReasonNotFound = "Protection_NotFound";
 
-    /// <summary>Le chemin designe la racine d'un volume ou d'un partage.</summary>
+    /// <summary>The path names the root of a volume or a share.</summary>
     public const string ReasonVolumeRoot = "Protection_VolumeRoot";
 
-    /// <summary>Le dossier appartient a une arborescence systeme.</summary>
+    /// <summary>The folder belongs to a system tree.</summary>
     public const string ReasonSystemTree = "Protection_SystemTree";
 
-    /// <summary>Le dossier est un dossier connu de Windows.</summary>
+    /// <summary>The folder is a Windows known folder.</summary>
     public const string ReasonKnownFolder = "Protection_KnownFolder";
 
-    /// <summary>Le dossier est une jonction ou un lien symbolique.</summary>
+    /// <summary>The folder is a junction or a symbolic link.</summary>
     public const string ReasonReparsePoint = "Protection_ReparsePoint";
 
-    /// <summary>Le dossier appartient a l'espace de travail de FolderHue.</summary>
+    /// <summary>The folder belongs to FolderHue's own workspace.</summary>
     public const string ReasonApplicationData = "Protection_ApplicationData";
 
     private readonly AppPaths _paths;
     private readonly IReadOnlyList<string> _exact;
     private readonly IReadOnlyList<string> _subtrees;
 
-    /// <summary>Construit la liste d'exclusion.</summary>
-    /// <param name="knownFolders">Source des dossiers connus.</param>
-    /// <param name="paths">Emplacements de travail de l'application, egalement proteges.</param>
-    /// <exception cref="ArgumentNullException">Un argument vaut <see langword="null"/>.</exception>
+    /// <summary>Builds the exclusion list.</summary>
+    /// <param name="knownFolders">Source of the known folders.</param>
+    /// <param name="paths">The application's own locations, protected as well.</param>
+    /// <exception cref="ArgumentNullException">An argument is <see langword="null"/>.</exception>
     public ProtectedPaths(IKnownFolderProvider knownFolders, AppPaths paths)
     {
         ArgumentNullException.ThrowIfNull(knownFolders);
@@ -149,13 +149,13 @@ public sealed class ProtectedPaths
         _subtrees = Normalize(knownFolders.GetProtectedSubtrees());
     }
 
-    /// <summary>Construit la liste d'exclusion de la machine courante.</summary>
-    /// <returns>Une instance branchee sur le shell reel et sur <see cref="AppPaths.Default"/>.</returns>
+    /// <summary>Builds the exclusion list for the current machine.</summary>
+    /// <returns>An instance wired to the real shell and to <see cref="AppPaths.Default"/>.</returns>
     public static ProtectedPaths CreateDefault() => new(new KnownFolderProvider(), AppPaths.Default);
 
-    /// <summary>Determine si un dossier peut etre colorise.</summary>
-    /// <param name="folderPath">Chemin du dossier, absolu ou relatif.</param>
-    /// <returns>Le verdict, assorti d'une cle de ressource en cas de refus.</returns>
+    /// <summary>Determines whether a folder may be colored.</summary>
+    /// <param name="folderPath">Folder path, absolute or relative.</param>
+    /// <returns>The verdict, carrying a resource key when the folder is refused.</returns>
     public ProtectionResult Evaluate(string folderPath)
     {
         if (string.IsNullOrWhiteSpace(folderPath))
@@ -178,8 +178,8 @@ public sealed class ProtectedPaths
             return ProtectionResult.Denied(ReasonInvalidPath);
         }
 
-        // La racine d'un volume ou d'un partage reseau ne se personnalise pas : desktop.ini y est
-        // ignore et l'attribut ReadOnly sur la racine a des effets de bord.
+        // The root of a volume or a network share cannot be customised: desktop.ini is ignored
+        // there, and ReadOnly on a root has side effects.
         if (IsRoot(folderPath, full))
         {
             return ProtectionResult.Denied(ReasonVolumeRoot);
@@ -211,8 +211,8 @@ public sealed class ProtectedPaths
             return ProtectionResult.Denied(ReasonNotFound);
         }
 
-        // Une jonction ou un lien symbolique renvoie ailleurs : ecrire dedans reviendrait a
-        // modifier une cible que l'utilisateur n'a pas selectionnee.
+        // A junction or a symbolic link points elsewhere: writing into it would modify a target
+        // the user did not select.
         if ((File.GetAttributes(full) & FileAttributes.ReparsePoint) != 0)
         {
             return ProtectionResult.Denied(ReasonReparsePoint);
@@ -229,8 +229,8 @@ public sealed class ProtectedPaths
             return true;
         }
 
-        // Cas UNC : \\serveur\partage n'a pas de parent utile, Path.GetDirectoryName retourne
-        // \\serveur, qui n'est pas un dossier reel.
+        // UNC case: \\server\share has no useful parent, Path.GetDirectoryName returns
+        // \\server, which is not a real folder.
         if (normalized.StartsWith(@"\\", StringComparison.Ordinal))
         {
             string body = normalized[2..];
@@ -273,7 +273,7 @@ public sealed class ProtectedPaths
             }
             catch (Exception e) when (e is ArgumentException or NotSupportedException or PathTooLongException)
             {
-                // Un dossier connu non resolu est simplement ignore.
+                // A known folder that does not resolve is simply ignored.
             }
         }
 

@@ -4,56 +4,56 @@ using System.Runtime.Versioning;
 namespace FolderHue.Shell;
 
 /// <summary>
-/// Unique point d'entree P/Invoke de <c>FolderHue.Shell</c> (CLAUDE.md §7).
+/// The single P/Invoke entry point of <c>FolderHue.Shell</c> (CLAUDE.md 7).
 /// </summary>
 /// <remarks>
-/// Les interfaces COM ne passent pas par ici : elles sont projetees par les generateurs de source
-/// dans <c>Com/ComInterop.cs</c>.
+/// COM interfaces do not go through here: the source generators project them in
+/// <c>Com/ComInterop.cs</c>.
 /// </remarks>
 [SupportedOSPlatform("windows")]
 internal static unsafe partial class NativeMethods
 {
-    /// <summary>Le nom passe est en fait une adresse. <c>GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS</c>, libloaderapi.h.</summary>
+    /// <summary>The name passed is really an address. <c>GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS</c>, libloaderapi.h.</summary>
     private const uint GetModuleHandleExFlagFromAddress = 0x00000004;
 
-    /// <summary>Ne pas incrementer le compteur de references du module. <c>..._UNCHANGED_REFCOUNT</c>, libloaderapi.h.</summary>
+    /// <summary>Do not bump the module's reference count. <c>..._UNCHANGED_REFCOUNT</c>, libloaderapi.h.</summary>
     private const uint GetModuleHandleExFlagUnchangedRefcount = 0x00000002;
 
     /// <summary>
-    /// Retrouve le module contenant une adresse donnee.
+    /// Finds the module containing a given address.
     /// </summary>
     /// <remarks>
-    /// Win32 : <c>GetModuleHandleExW</c>, kernel32.dll, en-tete libloaderapi.h.
-    /// Doc : https://learn.microsoft.com/windows/win32/api/libloaderapi/nf-libloaderapi-getmodulehandleexw
+    /// Win32: <c>GetModuleHandleExW</c>, kernel32.dll, header libloaderapi.h.
+    /// Docs: https://learn.microsoft.com/windows/win32/api/libloaderapi/nf-libloaderapi-getmodulehandleexw
     /// </remarks>
     [LibraryImport("kernel32.dll", EntryPoint = "GetModuleHandleExW", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool GetModuleHandleEx(uint dwFlags, IntPtr lpModuleName, out IntPtr phModule);
 
     /// <summary>
-    /// Retourne le chemin complet du fichier d'un module charge.
+    /// Returns the full file path of a loaded module.
     /// </summary>
     /// <remarks>
-    /// Win32 : <c>GetModuleFileNameW</c>, kernel32.dll, en-tete libloaderapi.h.
-    /// Doc : https://learn.microsoft.com/windows/win32/api/libloaderapi/nf-libloaderapi-getmodulefilenamew
+    /// Win32: <c>GetModuleFileNameW</c>, kernel32.dll, header libloaderapi.h.
+    /// Docs: https://learn.microsoft.com/windows/win32/api/libloaderapi/nf-libloaderapi-getmodulefilenamew
     /// </remarks>
     [LibraryImport("kernel32.dll", EntryPoint = "GetModuleFileNameW", SetLastError = true)]
     private static partial uint GetModuleFileName(IntPtr hModule, char* lpFilename, uint nSize);
 
     /// <summary>
-    /// Dossier contenant <c>FolderHue.Shell.dll</c>.
+    /// The directory holding <c>FolderHue.Shell.dll</c>.
     /// </summary>
-    /// <returns>Le dossier de la DLL, ou <see langword="null"/> s'il n'a pas pu etre determine.</returns>
+    /// <returns>The DLL's directory, or <see langword="null"/> when it could not be determined.</returns>
     /// <remarks>
-    /// <c>AppContext.BaseDirectory</c> ne convient pas : charge dans un processus hote, il rend le
-    /// dossier de <b>l'hote</b> — <c>C:\Windows\System32</c> en pratique — et non celui de la DLL.
-    /// On remonte donc au module a partir de l'adresse d'une de nos propres fonctions.
+    /// <c>AppContext.BaseDirectory</c> will not do: loaded inside a host process it returns the
+    /// <b>host's</b> directory — <c>C:\Windows\System32</c> in practice — and not the DLL's. So we
+    /// walk back to the module from the address of one of our own functions.
     /// </remarks>
     internal static string? GetModuleDirectory()
     {
         try
         {
-            // Une fonction exportee de ce module sert de point de repere.
+            // A function exported by this module serves as the landmark.
             delegate* unmanaged<int> anchor = &Exports.DllCanUnloadNow;
 
             if (!GetModuleHandleEx(
