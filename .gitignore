@@ -11,9 +11,12 @@ publish/
 *.pdb
 *.ilk
 
-# Sortie desktop.ini generee par les tests ou par l'app elle-meme
+# desktop.ini written by the tests or by the app itself
 desktop.ini
 desktop.ini.folderhue.bak
 
-# Certificats de dev — ne jamais versionner une cle privee
+# Signing certificates - never version a private key
 *.pfx
+
+# Working contract, deliberately unpublished: it records open defects and dead ends.
+CLAUDE.md
